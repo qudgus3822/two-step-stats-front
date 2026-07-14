@@ -3,6 +3,7 @@ import { api } from '../api/client';
 import { useApi } from '../api/useApi';
 import { useSeason } from '../context/SeasonContext';
 import { BarRanking, type BarDatum } from '../components/charts/BarRanking';
+import { GameStatsPanel } from '../components/GameStatsPanel';
 import { StatCard } from '../components/StatCard';
 import { Empty, ErrorView, Loading } from '../components/states';
 import { statCodeLabel } from '../lib/format';
@@ -53,6 +54,10 @@ export function DashboardPage() {
               accent={tokens.series[7]}
             />
           </div>
+
+          {/* [변경: 2026-07-14 14:43, 김병현 수정] 경기 단위 통계표 추가.
+              시즌(전역 필터) + 경기(드롭다운)를 고르면 그 경기 스탯을 한눈에. */}
+          <GameStatsPanel />
 
           <div className="grid-2">
             {/* 득점 TOP 8 */}
