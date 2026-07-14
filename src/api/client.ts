@@ -5,6 +5,7 @@ import type {
   LeaderboardRow,
   PlayerDetail,
   PlayerListItem,
+  Season,
   Summary,
   UploadResult,
 } from './types';
@@ -47,6 +48,53 @@ async function request<T>(path: string): Promise<T> {
 // 시즌 쿼리는 값이 있을 때만 붙인다(빈 문자열=전체).
 function seasonQuery(season?: string): string {
   return season ? `?season=${encodeURIComponent(season)}` : '';
+}
+
+// [변경: 2026-07-14 14:21, 김병현 수정] 실패 응답(4xx/5xx) 본문에서 사람이 읽을 메시지를 뽑아 던진다.
+// GET 전용 request() 와 새로 추가한 POST/DELETE 가 같은 방식으로 에러를 보여주도록 공용화.
+async function failure(res: Response, fallback: string): Promise<never> {
+  const detail = await res.text().catch(() => '');
+  let message = detail;
+  try {
+    // Nest 예외는 { message } 형태가 많음
+    const parsed = JSON.parse(detail);
+    message = parsed.message ?? detail;
+  } catch {
+    /* JSON 아니면 원문 그대로 */
+  }
+  throw new Error(message || fallback);
+}
+
+// JSON 본문 POST (시즌 등록 등). 연결 실패/에러는 request() 와 같은 문구로 처리.
+async function postJson<T>(path: string, body: unknown): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error(
+      `API 서버에 연결하지 못했습니다 (${BASE}). NestJS 서버가 켜져 있는지 확인하세요.`,
+    );
+  }
+  if (!res.ok) await failure(res, `요청 실패 (HTTP ${res.status})`);
+  return res.json() as Promise<T>;
+}
+
+// DELETE 요청 (시즌 등록 해제 등)
+async function del<T>(path: string): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, { method: 'DELETE' });
+  } catch {
+    throw new Error(
+      `API 서버에 연결하지 못했습니다 (${BASE}). NestJS 서버가 켜져 있는지 확인하세요.`,
+    );
+  }
+  if (!res.ok) await failure(res, `요청 실패 (HTTP ${res.status})`);
+  return res.json() as Promise<T>;
 }
 
 // [변경: 2026-07-14 14:21, 김병현 수정] 엑셀 업로드(multipart POST) 추가.
@@ -117,6 +165,14 @@ export const api = {
   // 엑셀 기록지 업로드 → 서버가 파싱 후 DB 적재. mode 기본값은 '교체'(replace).
   upload: (file: File, season: string, mode: 'replace' | 'append' = 'replace') =>
     uploadWorkbook(file, season, mode),
+
+  // 시즌 등록부: 등록된 시즌 목록 / 등록 / 등록 해제
+  seasonRegistry: () => request<Season[]>('/seasons/registry'),
+
+  createSeason: (name: string) => postJson<Season>('/seasons', { name }),
+
+  deleteSeason: (id: number) =>
+    del<{ ok: boolean; id: number }>(`/seasons/${id}`),
 };
 
 export { BASE as API_BASE };

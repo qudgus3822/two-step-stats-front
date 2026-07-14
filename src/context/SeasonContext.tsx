@@ -17,6 +17,7 @@ interface SeasonContextValue {
   seasons: string[]; // 서버가 준 시즌 목록
   season: string; // 지금 고른 시즌 ('' = 전체)
   setSeason: (s: string) => void;
+  refresh: () => Promise<void>; // [변경: 2026-07-14 14:21, 김병현 수정] 업로드 후 시즌 목록 새로고침용
   loading: boolean;
   error: string | null;
 }
@@ -29,33 +30,32 @@ export function SeasonProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 시즌 목록은 앱 시작 때 한 번만 불러온다.
-  useEffect(() => {
-    let alive = true;
-    api
-      .seasons()
-      .then((list) => {
-        if (alive) {
-          setSeasons(list);
-          setLoading(false);
-        }
-      })
-      .catch((err: unknown) => {
-        if (alive) {
-          setError(err instanceof Error ? err.message : String(err));
-          setLoading(false);
-        }
-      });
-    return () => {
-      alive = false;
-    };
+  // [변경: 2026-07-14 14:21, 김병현 수정] 목록 로딩을 load()로 빼서 mount·업로드후 둘 다 재사용.
+  // 시즌 목록을 서버에서 가져와 상태에 반영한다. loading 은 처음(true)에서만 내려가고,
+  // 새로고침(refresh) 때는 건드리지 않아 시즌선택 UI가 깜빡이지 않는다.
+  // SeasonProvider 는 앱 최상단이라 언마운트되지 않으므로 alive 가드는 생략.
+  const load = useCallback(async () => {
+    try {
+      const list = await api.seasons();
+      setSeasons(list);
+      setError(null);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  // 시즌 목록은 앱 시작 때 한 번 불러오고, 업로드 성공 시 refresh()로 다시 부른다.
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const change = useCallback((s: string) => setSeason(s), []);
 
   const value = useMemo<SeasonContextValue>(
-    () => ({ seasons, season, setSeason: change, loading, error }),
-    [seasons, season, change, loading, error],
+    () => ({ seasons, season, setSeason: change, refresh: load, loading, error }),
+    [seasons, season, change, load, loading, error],
   );
 
   return <SeasonContext.Provider value={value}>{children}</SeasonContext.Provider>;

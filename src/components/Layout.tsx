@@ -49,6 +49,10 @@ export function Layout() {
           <NavLink to="/leaderboard" className={navClass}>
             리더보드
           </NavLink>
+          {/* [변경: 2026-07-14 14:21, 김병현 수정] 엑셀 기록지 업로드 탭 추가 */}
+          <NavLink to="/upload" className={navClass}>
+            업로드
+          </NavLink>
         </nav>
 
         <div className="topbar-controls">

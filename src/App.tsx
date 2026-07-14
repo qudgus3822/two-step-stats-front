@@ -6,6 +6,8 @@ import { GamesPage } from './pages/GamesPage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
 import { PlayerDetailPage } from './pages/PlayerDetailPage';
 import { PlayersPage } from './pages/PlayersPage';
+// [변경: 2026-07-14 14:21, 김병현 수정] 엑셀 업로드 화면 라우트 추가
+import { UploadPage } from './pages/UploadPage';
 
 // 라우팅 표: 어떤 주소에서 어떤 화면을 보여줄지. 전부 Layout(헤더+본문) 안에 들어간다.
 export function App() {
@@ -18,6 +20,7 @@ export function App() {
         <Route path="players" element={<PlayersPage />} />
         <Route path="players/:name" element={<PlayerDetailPage />} />
         <Route path="leaderboard" element={<LeaderboardPage />} />
+        <Route path="upload" element={<UploadPage />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

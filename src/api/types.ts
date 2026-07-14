@@ -131,8 +131,15 @@ export interface LeaderboardRow {
   perGame: number;
 }
 
-// [변경: 2026-07-14 14:21, 김병현 수정] 엑셀 업로드 응답 타입 추가
-// 원본: api/src/stats/parser.service.ts(ParseWarning) + stats.controller.ts(upload)
+// [변경: 2026-07-14 14:21, 김병현 수정] 시즌 등록부 + 엑셀 업로드 응답 타입 추가
+// 원본: api/src/stats/parser.service.ts(ParseWarning) + stats.controller.ts(upload/seasons)
+
+// GET /seasons/registry — DB에서 관리하는 '등록된 시즌'(허용 시즌명 사전)
+export interface Season {
+  id: number;
+  name: string; // 시즌명 (예: 나이배, 25-1시즌)
+  createdAt: string; // 등록 시각(ISO 문자열)
+}
 
 // 파싱 중 발견한 경고 한 건 (미등록 스텟 코드 등). 기록지 오타 조기 발견용.
 export interface ParseWarning {
