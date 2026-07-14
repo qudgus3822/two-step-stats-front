@@ -1,17 +1,17 @@
 import type {
+  Competition,
   GameBox,
   GameSummary,
   LeaderboardMetric,
   LeaderboardRow,
   PlayerDetail,
   PlayerListItem,
-  Season,
   Summary,
   UploadResult,
 } from './types';
 
 // 백엔드 호출을 한 곳에 모은 얇은 API 클라이언트.
-// 화면 코드는 fetch/URL 조립을 몰라도 되고, api.games(season) 처럼만 부른다.
+// 화면 코드는 fetch/URL 조립을 몰라도 되고, api.games(competitionId) 처럼만 부른다.
 
 // API 주소: 환경변수 우선, 없으면 로컬 3000. 끝의 슬래시는 떼서 이중 슬래시 방지.
 const BASE = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000').replace(
@@ -45,9 +45,10 @@ async function request<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-// 시즌 쿼리는 값이 있을 때만 붙인다(빈 문자열=전체).
-function seasonQuery(season?: string): string {
-  return season ? `?season=${encodeURIComponent(season)}` : '';
+// [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — 필터 키가 문자열(season)에서
+// 숫자 id(competitionId)로 바뀌었다. null/undefined(=전체)면 쿼리를 안 붙인다.
+function competitionQuery(competitionId?: number | null): string {
+  return competitionId != null ? `?competitionId=${competitionId}` : '';
 }
 
 // [변경: 2026-07-14 14:21, 김병현 수정] 실패 응답(4xx/5xx) 본문에서 사람이 읽을 메시지를 뽑아 던진다.
@@ -65,25 +66,7 @@ async function failure(res: Response, fallback: string): Promise<never> {
   throw new Error(message || fallback);
 }
 
-// JSON 본문 POST (시즌 등록 등). 연결 실패/에러는 request() 와 같은 문구로 처리.
-async function postJson<T>(path: string, body: unknown): Promise<T> {
-  let res: Response;
-  try {
-    res = await fetch(`${BASE}${path}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-  } catch {
-    throw new Error(
-      `API 서버에 연결하지 못했습니다 (${BASE}). NestJS 서버가 켜져 있는지 확인하세요.`,
-    );
-  }
-  if (!res.ok) await failure(res, `요청 실패 (HTTP ${res.status})`);
-  return res.json() as Promise<T>;
-}
-
-// DELETE 요청 (시즌 등록 해제 등)
+// DELETE 요청 (대회 등록 해제 등)
 async function del<T>(path: string): Promise<T> {
   let res: Response;
   try {
@@ -97,20 +80,22 @@ async function del<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-// [변경: 2026-07-14 14:21, 김병현 수정] 엑셀 업로드(multipart POST) 추가.
-// GET 전용 request() 와 달리 파일을 FormData 로 보내야 해서 별도 함수로 둔다.
-// 파싱/DB 적재는 전부 서버(POST /upload)가 하고, 여기선 파일+시즌만 넘긴다.
+// 엑셀 업로드(multipart POST). GET 전용 request() 와 달리 파일을 FormData 로 보내야 해서
+// 별도 함수로 둔다. 파싱/DB 적재는 전부 서버(POST /upload)가 하고, 여기선 파일+대회 정보만 넘긴다.
+// [변경: 2026-07-14 17:32, 김병현 수정] 대회는 이제 "연도+시즌번호(선택)+대회명" 3값으로 넘긴다
+// (옛 season 문자열 1개 대신). 서버가 이 3값으로 Competition 을 upsert 한다.
 async function uploadWorkbook(
   file: File,
-  season: string,
+  c: { year: number; seasonNo: number | null; name: string },
   mode: 'replace' | 'append',
 ): Promise<UploadResult> {
   const form = new FormData();
   form.append('file', file); // 서버는 'file' 필드로 받는다(FileInterceptor)
 
-  // mode 는 항상, season 은 값이 있을 때만 쿼리로 붙인다.
   const q = new URLSearchParams({ mode });
-  if (season.trim()) q.set('season', season.trim());
+  q.set('year', String(c.year));
+  if (c.seasonNo != null) q.set('seasonNo', String(c.seasonNo));
+  q.set('name', c.name.trim());
 
   let res: Response;
   try {
@@ -142,37 +127,40 @@ async function uploadWorkbook(
 export const api = {
   health: () => request<{ ok: boolean }>('/health'),
 
-  seasons: () => request<string[]>('/seasons'),
+  summary: (competitionId?: number | null) =>
+    request<Summary>(`/summary${competitionQuery(competitionId)}`),
 
-  summary: (season?: string) => request<Summary>(`/summary${seasonQuery(season)}`),
-
-  games: (season?: string) => request<GameSummary[]>(`/games${seasonQuery(season)}`),
+  games: (competitionId?: number | null) =>
+    request<GameSummary[]>(`/games${competitionQuery(competitionId)}`),
 
   game: (id: string) => request<GameBox>(`/games/${encodeURIComponent(id)}`),
 
-  players: (season?: string) =>
-    request<PlayerListItem[]>(`/players${seasonQuery(season)}`),
+  players: (competitionId?: number | null) =>
+    request<PlayerListItem[]>(`/players${competitionQuery(competitionId)}`),
 
   player: (name: string) =>
     request<PlayerDetail>(`/players/${encodeURIComponent(name)}`),
 
-  leaderboard: (metric: LeaderboardMetric, limit: number, season?: string) => {
-    const q = new URLSearchParams({ metric, limit: String(limit) });
-    if (season) q.set('season', season);
+  // [변경: 2026-07-14 17:49, 김병현 수정] limit 선택적 — 양수일 때만 쿼리에 붙이고, 생략/0이하면 서버가 전체 반환.
+  leaderboard: (metric: LeaderboardMetric, limit?: number, competitionId?: number | null) => {
+    const q = new URLSearchParams({ metric });
+    if (limit && limit > 0) q.set('limit', String(limit));
+    if (competitionId != null) q.set('competitionId', String(competitionId));
     return request<LeaderboardRow[]>(`/leaderboard?${q.toString()}`);
   },
 
   // 엑셀 기록지 업로드 → 서버가 파싱 후 DB 적재. mode 기본값은 '교체'(replace).
-  upload: (file: File, season: string, mode: 'replace' | 'append' = 'replace') =>
-    uploadWorkbook(file, season, mode),
+  upload: (
+    file: File,
+    c: { year: number; seasonNo: number | null; name: string },
+    mode: 'replace' | 'append' = 'replace',
+  ) => uploadWorkbook(file, c, mode),
 
-  // 시즌 등록부: 등록된 시즌 목록 / 등록 / 등록 해제
-  seasonRegistry: () => request<Season[]>('/seasons/registry'),
+  // 대회 등록부: 등록된 대회 목록 (등록은 upload 가 자동으로 upsert 해서 별도 호출 없음) / 등록 해제
+  competitions: () => request<Competition[]>('/competitions'),
 
-  createSeason: (name: string) => postJson<Season>('/seasons', { name }),
-
-  deleteSeason: (id: number) =>
-    del<{ ok: boolean; id: number }>(`/seasons/${id}`),
+  deleteCompetition: (id: number) =>
+    del<{ ok: boolean; id: number }>(`/competitions/${id}`),
 };
 
 export { BASE as API_BASE };

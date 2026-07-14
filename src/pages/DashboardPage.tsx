@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useApi } from '../api/useApi';
-import { useSeason } from '../context/SeasonContext';
+// [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — useSeason → useCompetition(리네임).
+import { useCompetition } from '../context/CompetitionContext';
 import { BarRanking, type BarDatum } from '../components/charts/BarRanking';
 import { GameStatsPanel } from '../components/GameStatsPanel';
 // [변경: 2026-07-14 14:56, 김병현 수정] 요약 카드 제거로 StatCard import 삭제.
@@ -12,11 +13,11 @@ import { useTheme } from '../theme/ThemeContext';
 // 대시보드: 전체 규모를 한눈에. 요약 카드 4개 + 득점 TOP + 스탯 코드 분포.
 
 export function DashboardPage() {
-  const { season } = useSeason();
+  const { competitionId, competitionLabel } = useCompetition();
   const { tokens } = useTheme();
 
-  const summaryState = useApi(() => api.summary(season), [season]);
-  const topState = useApi(() => api.leaderboard('pts', 8, season), [season]);
+  const summaryState = useApi(() => api.summary(competitionId), [competitionId]);
+  const topState = useApi(() => api.leaderboard('pts', 8, competitionId), [competitionId]);
 
   const summary = summaryState.data;
 
@@ -24,9 +25,7 @@ export function DashboardPage() {
     <div className="page">
       <div className="page-head">
         <h1 className="page-title">대시보드</h1>
-        <p className="page-sub">
-          {season ? `${season} 시즌` : '전체 시즌'} 기록 요약
-        </p>
+        <p className="page-sub">{competitionLabel ?? '전체 대회'} 기록 요약</p>
       </div>
 
       {summaryState.loading && <Loading />}

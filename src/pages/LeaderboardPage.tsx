@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useApi } from '../api/useApi';
-import { useSeason } from '../context/SeasonContext';
+// [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — useSeason → useCompetition(리네임).
+import { useCompetition } from '../context/CompetitionContext';
 import { LEADERBOARD_METRICS, type LeaderboardMetric } from '../api/types';
 import { BarRanking, type BarDatum } from '../components/charts/BarRanking';
 import { Empty, ErrorView, Loading } from '../components/states';
@@ -10,14 +11,16 @@ import { METRIC_LABELS } from '../lib/format';
 
 // 리더보드: 지표를 골라 누적 순위를 막대 + 표로. 차트는 눈으로, 표는 정확한 값/평균으로.
 
-const TOP_N = 20;
+// [변경: 2026-07-14 17:49, 김병현 수정] 표는 전체 순위, 막대 차트만 상위 12명으로 제한.
+const CHART_TOP_N = 12;
 
 export function LeaderboardPage() {
-  const { season } = useSeason();
+  const { competitionId, competitionLabel } = useCompetition();
   const [metric, setMetric] = useState<LeaderboardMetric>('pts');
+  // [변경: 2026-07-14 17:49, 김병현 수정] limit 생략 → 상위 N 제한 없이 전체 선수 조회.
   const { data, loading, error, reload } = useApi(
-    () => api.leaderboard(metric, TOP_N, season),
-    [metric, season],
+    () => api.leaderboard(metric, undefined, competitionId),
+    [metric, competitionId],
   );
 
   return (
@@ -25,7 +28,9 @@ export function LeaderboardPage() {
       <div className="page-head">
         <h1 className="page-title">리더보드</h1>
         <p className="page-sub">
-          {season ? `${season} 시즌` : '전체 시즌'} · 누적 {METRIC_LABELS[metric]} 순위 (상위 {TOP_N})
+          {/* [변경: 2026-07-14 17:49, 김병현 수정] "상위 N" → 전체 인원 수 표기. */}
+          {competitionLabel ?? '전체 대회'} · 누적 {METRIC_LABELS[metric]} 순위 (전체{' '}
+          {data ? `${data.length}명` : ''})
         </p>
       </div>
 
@@ -56,7 +61,7 @@ export function LeaderboardPage() {
               <h2 className="card-title">{METRIC_LABELS[metric]} 상위</h2>
             </div>
             <BarRanking
-              data={data.slice(0, 12).map<BarDatum>((row) => ({
+              data={data.slice(0, CHART_TOP_N).map<BarDatum>((row) => ({
                 label: row.player,
                 value: row.total,
               }))}

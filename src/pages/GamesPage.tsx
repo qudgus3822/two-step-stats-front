@@ -1,22 +1,26 @@
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useApi } from '../api/useApi';
-import { useSeason } from '../context/SeasonContext';
+// [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — useSeason → useCompetition(리네임).
+import { useCompetition } from '../context/CompetitionContext';
 import type { GameSummary } from '../api/types';
 import { Empty, ErrorView, Loading } from '../components/states';
 import { gameLabel } from '../lib/format';
 
-// 경기 목록: 시즌 안의 모든 경기를 점수/승패와 함께 카드로 나열. 누르면 박스스코어로.
+// 경기 목록: 대회 안의 모든 경기를 점수/승패와 함께 카드로 나열. 누르면 박스스코어로.
 
 export function GamesPage() {
-  const { season } = useSeason();
-  const { data, loading, error, reload } = useApi(() => api.games(season), [season]);
+  const { competitionId, competitionLabel } = useCompetition();
+  const { data, loading, error, reload } = useApi(
+    () => api.games(competitionId),
+    [competitionId],
+  );
 
   return (
     <div className="page">
       <div className="page-head">
         <h1 className="page-title">경기</h1>
-        <p className="page-sub">{season ? `${season} 시즌` : '전체 시즌'} · 눌러서 박스스코어 보기</p>
+        <p className="page-sub">{competitionLabel ?? '전체 대회'} · 눌러서 박스스코어 보기</p>
       </div>
 
       {loading && <Loading />}
@@ -41,7 +45,8 @@ function GameRow({ game }: { game: GameSummary }) {
     <Link className="game-row card" to={`/games/${encodeURIComponent(game.id)}`}>
       <div className="game-when">
         <span className="game-week">{gameLabel(game.week, game.game)}</span>
-        <span className="game-season">{game.season}</span>
+        {/* [변경: 2026-07-14 17:32, 김병현 수정] game.season(문자열) → game.competition(대회 라벨) */}
+        <span className="game-season">{game.competition}</span>
       </div>
 
       <div className="game-score">

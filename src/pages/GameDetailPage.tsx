@@ -30,7 +30,8 @@ export function GameDetailPage() {
         <>
           <div className="page-head">
             <h1 className="page-title">{gameLabel(data.week, data.game)}</h1>
-            <p className="page-sub">{data.season}</p>
+            {/* [변경: 2026-07-14 17:32, 김병현 수정] data.season(문자열) → data.competition(대회 라벨) */}
+            <p className="page-sub">{data.competition}</p>
           </div>
 
           {/* 최종 스코어보드 */}

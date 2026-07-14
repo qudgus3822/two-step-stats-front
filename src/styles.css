@@ -716,6 +716,41 @@ h3 {
   color: color-mix(in srgb, var(--draw) 72%, var(--text));
 }
 
+/* [변경: 2026-07-14 15:15, 김병현 수정] 시즌 조합(연도 + 시즌번호 → 라벨) 선택 UI */
+.season-compose {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.season-field {
+  flex: 0 0 auto;
+}
+.season-field .select {
+  min-width: 96px;
+}
+.season-label-preview {
+  color: var(--text-2);
+  font-size: 13px;
+  padding-bottom: 8px;
+}
+.season-registered {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — 시즌번호 입력 + "지정안함" 토글 버튼 한 줄 묶음. */
+.season-seasonno {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.season-seasonno .select {
+  width: 84px;
+}
+
 /* 등록된 시즌 칩: 이름 버튼(선택) + ✕ 버튼(등록 해제) */
 .season-chips {
   display: flex;

@@ -1,5 +1,4 @@
 import {
-  useEffect,
   useRef,
   useState,
   type DragEvent,
@@ -7,16 +6,27 @@ import {
 } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
-import { useApi } from '../api/useApi';
-import { useSeason } from '../context/SeasonContext';
-import type { UploadResult } from '../api/types';
+// [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — useSeason → useCompetition(리네임).
+// 대회 목록은 이제 전역 컨텍스트가 들고 있어서(등록/새로고침 공유), 이 화면이 따로 fetch 하지 않는다.
+import { useCompetition } from '../context/CompetitionContext';
+import type { Competition, UploadResult } from '../api/types';
 import { ErrorView, Loading } from '../components/states';
 
 // 기록지 엑셀 업로드 화면.
-// 엑셀엔 시즌 컬럼이 없어서(주차/경기/쿼터/선수/스텟/팀명 6개뿐) 시즌은 자유 입력이 아니라
-// 'DB에 등록된 시즌' 중에서 고른다 → 라벨 오타/표기흔들림 방지. 이 화면에서 시즌 등록도 한다.
-// 고른 시즌명 + 파일을 서버로 보내면 파싱→DB 적재는 전부 백엔드(POST /upload)가 한다.
-// 같은 (시즌, 경기)를 다시 올리면 그 경기만 덮어쓴다(서버 replace 규칙).
+// [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — 업로드할 엑셀은 여전히 6컬럼
+// (주차/경기/쿼터/선수/스텟/팀명)이라 '대회' 정보가 없다. 그래서 대회는 여기서
+// '연도 + 시즌번호(선택) + 대회명' 3개를 입력받아 정한다(파일 안에서 안 읽음).
+// 고른 대회는 업로드할 때 서버가 자동으로 upsert 한다(이미 있으면 그대로 재사용 — 멱등).
+// 파싱→DB 적재는 전부 백엔드(POST /upload). 같은 (대회,경기) 재업로드는 그 경기만 덮어쓴다.
+
+// 연도+시즌번호(선택)+대회명 → 라벨.
+// [변경: 2026-07-14 17:32, 김병현 수정] 규칙 동기화 주의: 이 함수는 백엔드
+// competition.service.ts 의 competitionLabel() 과 반드시 글자 그대로 동일해야 한다.
+// (여긴 업로드 전 "미리보기" 전용이고, 실제 저장되는 라벨은 서버가 만든다 — 화면 표시는
+// 대부분 서버가 준 label 을 그대로 쓰므로 이 복제가 어긋나도 실제 데이터는 안전하다.)
+function competitionLabel(year: number, seasonNo: number | null, name: string): string {
+  return seasonNo != null ? `${year} 시즌${seasonNo} · ${name}` : `${year} ${name}`;
+}
 
 // 바이트를 사람이 읽는 크기로 (파일 미리보기용)
 function formatBytes(bytes: number): string {
@@ -30,23 +40,30 @@ function looksLikeXlsx(file: File): boolean {
   return /\.xlsx$/i.test(file.name);
 }
 
+// 시즌번호 입력값 → 안전한 양의 정수(파싱 실패/0 이하면 1).
+function parseSeasonNoInput(raw: string): number {
+  const n = parseInt(raw, 10);
+  return Number.isFinite(n) && n > 0 ? n : 1;
+}
+
+// 연도 선택 후보: 올해 기준으로 최근 몇 년(고정 리스트가 아니라 넉넉히). 2023~2030 정도면 충분.
+const YEAR_OPTIONS = [2030, 2029, 2028, 2027, 2026, 2025, 2024, 2023];
+
 export function UploadPage() {
-  const { setSeason: setGlobalSeason, refresh } = useSeason();
-
-  // 등록된 시즌 목록 (허용 시즌명 사전)
   const {
-    data: seasons,
-    loading: seasonsLoading,
-    error: seasonsError,
-    reload: reloadSeasons,
-  } = useApi(() => api.seasonRegistry(), []);
+    competitions,
+    refresh,
+    setCompetitionId,
+    loading: competitionsLoading,
+    error: competitionsError,
+  } = useCompetition();
 
-  // 시즌 등록/선택 상태
-  const [selected, setSelected] = useState(''); // 업로드 대상 시즌명
-  const [newName, setNewName] = useState(''); // 새로 등록할 시즌명
-  const [registering, setRegistering] = useState(false);
+  // 대회 선택 상태 (연도 + 시즌번호(선택) + 대회명). 라벨은 이 셋으로 자동 조합.
+  const [year, setYear] = useState<number>(new Date().getFullYear());
+  const [seasonNo, setSeasonNo] = useState<number | null>(null);
+  const [name, setName] = useState<string>('');
   const [deletingId, setDeletingId] = useState<number | null>(null);
-  const [seasonError, setSeasonError] = useState<string | null>(null);
+  const [competitionError, setCompetitionError] = useState<string | null>(null);
 
   // 파일 업로드 상태
   const [file, setFile] = useState<File | null>(null);
@@ -56,43 +73,28 @@ export function UploadPage() {
   const [result, setResult] = useState<UploadResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 목록이 바뀌면 선택값을 유효하게 유지: 지워졌거나 아직 없으면 첫 시즌(또는 없음)으로.
-  useEffect(() => {
-    if (!seasons) return;
-    const names = seasons.map((s) => s.name);
-    setSelected((cur) => (cur && names.includes(cur) ? cur : names[0] ?? ''));
-  }, [seasons]);
+  // 대회명이 비어 있으면 라벨을 만들 수 없으니 미리보기도 비운다(입력 중엔 조용히 기다린다).
+  const trimmedName = name.trim();
+  const preview = trimmedName ? competitionLabel(year, seasonNo, trimmedName) : null;
+  const canUpload = !!file && !!trimmedName && year > 0 && !uploading;
 
-  const canUpload = !!selected && !!file && !uploading;
-
-  // 시즌 등록: 등록 후 목록 새로고침 + 방금 등록한 시즌을 업로드 대상으로 선택.
-  async function handleRegister(e: FormEvent) {
-    e.preventDefault();
-    const name = newName.trim();
-    if (!name || registering) return;
-    setRegistering(true);
-    setSeasonError(null);
-    try {
-      const created = await api.createSeason(name);
-      setNewName('');
-      setSelected(created.name);
-      await reloadSeasons();
-    } catch (err) {
-      setSeasonError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setRegistering(false);
-    }
+  // 등록된 칩을 누르면 그 대회의 (연도,시즌번호,대회명)으로 선택값을 채운다.
+  function pickRegistered(c: Competition) {
+    setYear(c.year);
+    setSeasonNo(c.seasonNo);
+    setName(c.name);
   }
 
-  // 시즌 등록 해제 (경기 기록은 서버에서 유지됨 — 허용 목록에서만 빠진다)
+  // 대회 등록 해제. FK(Restrict) 때문에 경기 기록이 있는 대회는 서버가 409 로 막는다 —
+  // 그 경우 에러 메시지를 그대로 사람이 읽는 문구로 보여준다.
   async function handleDelete(id: number) {
     setDeletingId(id);
-    setSeasonError(null);
+    setCompetitionError(null);
     try {
-      await api.deleteSeason(id);
-      await reloadSeasons();
+      await api.deleteCompetition(id);
+      await refresh();
     } catch (err) {
-      setSeasonError(err instanceof Error ? err.message : String(err));
+      setCompetitionError(err instanceof Error ? err.message : String(err));
     } finally {
       setDeletingId(null);
     }
@@ -112,7 +114,7 @@ export function UploadPage() {
     if (dropped) pickFile(dropped);
   }
 
-  // "또 올리기": 파일만 비우고 시즌 선택은 유지(같은 시즌에 다음 경기 올릴 때 편하게).
+  // "또 올리기": 파일만 비우고 대회 선택은 유지(같은 대회에 다음 경기 올릴 때 편하게).
   function resetFile() {
     setFile(null);
     setUploadError(null);
@@ -120,17 +122,19 @@ export function UploadPage() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
+  // 업로드: 파일 + 대회 정보(연도/시즌번호/대회명)를 서버로 보낸다.
+  // 별도 등록 호출이 없다 — 서버가 POST /upload 안에서 대회를 upsert(멱등)하고 그 id 로 적재한다.
   async function handleUpload(e: FormEvent) {
     e.preventDefault();
-    if (!file || !selected) return;
+    if (!file) return;
     setUploading(true);
     setUploadError(null);
     setResult(null);
     try {
-      const res = await api.upload(file, selected);
+      const res = await api.upload(file, { year, seasonNo, name: trimmedName });
       setResult(res);
-      await refresh(); // 새 시즌이 상단 시즌선택 드롭다운에 뜨도록 목록 새로고침
-      setGlobalSeason(res.season); // 방금 올린 시즌으로 전역 필터 이동 → 바로 확인 가능
+      await refresh(); // 새로 등록된 대회가 아래 칩/전역 목록에 뜨도록
+      setCompetitionId(res.competitionId); // 방금 올린 대회로 이동 → 바로 확인
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -143,43 +147,111 @@ export function UploadPage() {
       <div className="page-head">
         <h1 className="page-title">기록지 업로드</h1>
         <p className="page-sub">
-          시즌을 고르고 엑셀(.xlsx) 기록지를 올리면 서버가 읽어서 저장해요.
+          대회(연도+시즌번호+대회명)를 정하고 엑셀(.xlsx) 기록지를 올리면 서버가 읽어서 저장해요.
         </p>
       </div>
 
-      {/* 1) 시즌 — 자유 입력이 아니라 등록된 시즌 중에서 고른다. 없으면 여기서 등록. */}
+      {/* 1) 대회 — 엑셀엔 대회 칸이 없어서 여기서 연도+시즌번호+대회명으로 정한다. 업로드 시 자동 등록(upsert). */}
       <section className="card upload-card">
         <div className="card-head">
-          <h2 className="card-title">시즌</h2>
-          <span className="card-note">엑셀엔 시즌 정보가 없어서 여기서 골라야 해요</span>
+          <h2 className="card-title">대회</h2>
+          <span className="card-note">
+            선택한 대회: <b>{preview ?? '대회명을 입력하세요'}</b>
+          </span>
         </div>
 
-        {seasonsLoading && <Loading label="시즌 목록 불러오는 중…" />}
-        {seasonsError && <ErrorView message={seasonsError} onRetry={reloadSeasons} />}
+        <div className="season-compose">
+          <label className="field season-field">
+            <span className="field-label">연도</span>
+            <select
+              className="select"
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+              aria-label="연도 선택"
+            >
+              {YEAR_OPTIONS.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        {seasons && (
-          <>
-            {seasons.length > 0 ? (
+          {/* 시즌번호(선택) — 라벨/필드명은 그대로 "시즌번호". 지정안함 토글로 null ↔ 값을 오간다. */}
+          <div className="field season-field">
+            <span className="field-label">시즌번호</span>
+            <div className="season-seasonno">
+              <input
+                className="select"
+                type="number"
+                min={1}
+                value={seasonNo ?? ''}
+                disabled={seasonNo == null}
+                onChange={(e) => setSeasonNo(parseSeasonNoInput(e.target.value))}
+                aria-label="시즌번호 입력"
+              />
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setSeasonNo((prev) => (prev == null ? 1 : null))}
+              >
+                {seasonNo != null ? '지정안함' : '시즌번호 지정'}
+              </button>
+            </div>
+          </div>
+
+          <label className="field season-field">
+            <span className="field-label">대회명</span>
+            <input
+              className="search field-input"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="예: 나이배"
+              aria-label="대회명 입력"
+            />
+          </label>
+
+          <span className="season-label-preview" aria-live="polite">
+            {preview ? (
+              <>
+                → <b>{preview}</b> 로 저장돼요
+              </>
+            ) : (
+              '대회명을 입력하면 저장될 라벨이 여기 나와요'
+            )}
+          </span>
+        </div>
+
+        {/* 이미 등록된 대회 (눌러서 빠르게 선택 / ✕ 로 등록 해제) */}
+        <div className="season-registered">
+          {competitionsLoading && <Loading label="등록된 대회 불러오는 중…" />}
+          {competitionsError && (
+            <ErrorView message={competitionsError} onRetry={refresh} />
+          )}
+          {competitions.length > 0 && (
+            <>
+              <span className="field-hint">등록된 대회 (눌러서 선택)</span>
               <div className="season-chips">
-                {seasons.map((s) => (
+                {competitions.map((c) => (
                   <div
-                    key={s.id}
-                    className={`season-chip${selected === s.name ? ' is-selected' : ''}`}
+                    key={c.id}
+                    className={`season-chip${c.label === preview ? ' is-selected' : ''}`}
                   >
                     <button
                       type="button"
                       className="season-chip-name"
-                      onClick={() => setSelected(s.name)}
-                      aria-pressed={selected === s.name}
+                      onClick={() => pickRegistered(c)}
+                      aria-pressed={c.label === preview}
                     >
-                      {s.name}
+                      {c.label}
                     </button>
                     <button
                       type="button"
                       className="season-chip-del"
-                      onClick={() => handleDelete(s.id)}
-                      disabled={deletingId === s.id}
-                      aria-label={`${s.name} 등록 해제`}
+                      onClick={() => handleDelete(c.id)}
+                      disabled={deletingId === c.id}
+                      aria-label={`${c.label} 등록 해제`}
                       title="등록 해제"
                     >
                       ✕
@@ -187,33 +259,12 @@ export function UploadPage() {
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="field-hint">등록된 시즌이 없어요. 아래에서 새 시즌을 먼저 등록하세요.</p>
-            )}
-
-            {/* 새 시즌 등록 */}
-            <form className="season-register" onSubmit={handleRegister}>
-              <input
-                className="search field-input"
-                type="text"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="새 시즌 이름 (예: 나이배)"
-                aria-label="새 시즌 이름"
-              />
-              <button
-                type="submit"
-                className="btn"
-                disabled={!newName.trim() || registering}
-              >
-                {registering ? '등록 중…' : '시즌 등록'}
-              </button>
-            </form>
-            {seasonError && (
-              <span className="field-hint field-hint--warn">{seasonError}</span>
-            )}
-          </>
-        )}
+            </>
+          )}
+          {competitionError && (
+            <span className="field-hint field-hint--warn">{competitionError}</span>
+          )}
+        </div>
       </section>
 
       {/* 2) 파일 업로드 — 경기/주차/쿼터/선수/스텟/팀은 파일 안에서 읽는다 */}
@@ -221,13 +272,7 @@ export function UploadPage() {
         <div className="card-head">
           <h2 className="card-title">기록지 파일 (.xlsx)</h2>
           <span className="card-note">
-            {selected ? (
-              <>
-                업로드 대상: <b>{selected}</b>
-              </>
-            ) : (
-              '위에서 시즌을 먼저 고르세요'
-            )}
+            업로드 대상: <b>{preview ?? '대회명을 입력하세요'}</b>
           </span>
         </div>
 
@@ -272,7 +317,7 @@ export function UploadPage() {
 
         <div className="upload-actions">
           <button type="submit" className="btn btn--primary" disabled={!canUpload}>
-            {uploading ? '업로드 중…' : '업로드'}
+            {uploading ? '업로드 중…' : preview ? `${preview} 로 업로드` : '업로드'}
           </button>
           {file && !uploading && (
             <button type="button" className="btn" onClick={resetFile}>
@@ -280,7 +325,7 @@ export function UploadPage() {
             </button>
           )}
           <span className="field-hint">
-            같은 시즌·경기를 다시 올리면 그 경기 기록만 새 파일로 덮어써요.
+            같은 대회·경기를 다시 올리면 그 경기 기록만 새 파일로 덮어써요.
           </span>
         </div>
       </form>
@@ -317,7 +362,7 @@ function UploadResultCard({
         <div>
           <strong className="upload-result-title">업로드 완료</strong>
           <p className="upload-result-sub">
-            <b>{result.season}</b> 시즌에 {result.imported.toLocaleString()}건 적재
+            <b>{result.competition}</b> 대회에 {result.imported.toLocaleString()}건 적재
             <span className="dot-sep">·</span>시트 {result.sheet}
             <span className="dot-sep">·</span>
             {result.mode === 'replace' ? '그 경기 교체' : '증분 추가'}

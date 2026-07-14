@@ -2,14 +2,18 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useApi } from '../api/useApi';
-import { useSeason } from '../context/SeasonContext';
+// [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — useSeason → useCompetition(리네임).
+import { useCompetition } from '../context/CompetitionContext';
 import { Empty, ErrorView, Loading } from '../components/states';
 
 // 선수 목록: 득점 많은 순 표. 이름으로 즉석 검색(클라이언트 필터)도 된다.
 
 export function PlayersPage() {
-  const { season } = useSeason();
-  const { data, loading, error, reload } = useApi(() => api.players(season), [season]);
+  const { competitionId, competitionLabel } = useCompetition();
+  const { data, loading, error, reload } = useApi(
+    () => api.players(competitionId),
+    [competitionId],
+  );
   const [query, setQuery] = useState('');
 
   // 검색어로 거른 목록. 대소문자/공백 무시.
@@ -24,7 +28,7 @@ export function PlayersPage() {
     <div className="page">
       <div className="page-head">
         <h1 className="page-title">선수</h1>
-        <p className="page-sub">{season ? `${season} 시즌` : '전체 시즌'} · 득점순</p>
+        <p className="page-sub">{competitionLabel ?? '전체 대회'} · 득점순</p>
       </div>
 
       {loading && <Loading />}

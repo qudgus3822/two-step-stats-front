@@ -50,10 +50,10 @@ export interface Summary {
   byStat: Record<string, number>; // 스탯 코드별 등장 횟수
 }
 
-// GET /games
+// GET /games — competition 필드는 표시 라벨(=Competition.label) 문자열이다.
 export interface GameSummary {
   id: string;
-  season: string;
+  competition: string;
   week: number;
   game: number;
   teams: TeamScore[];
@@ -61,10 +61,10 @@ export interface GameSummary {
   events: number;
 }
 
-// GET /games/:id
+// GET /games/:id — competition 필드는 표시 라벨(=Competition.label) 문자열이다.
 export interface GameBox {
   id: string;
-  season: string;
+  competition: string;
   week: number;
   game: number;
   winner: string | null;
@@ -85,10 +85,10 @@ export interface PlayerListItem {
 
 export type GameResult = 'W' | 'L' | 'D';
 
-// GET /players/:name 안의 경기별 라인
+// GET /players/:name 안의 경기별 라인 — competition 필드는 표시 라벨 문자열이다.
 export interface PlayerGameLine extends PlayerLine {
   id: string;
-  season: string;
+  competition: string;
   week: number;
   game: number;
   opponent: string | null;
@@ -131,13 +131,16 @@ export interface LeaderboardRow {
   perGame: number;
 }
 
-// [변경: 2026-07-14 14:21, 김병현 수정] 시즌 등록부 + 엑셀 업로드 응답 타입 추가
-// 원본: api/src/stats/parser.service.ts(ParseWarning) + stats.controller.ts(upload/seasons)
+// [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — 대회를 "진짜 행"(Competition)으로 승격.
+// 원본: api/src/stats/competition.service.ts(CompetitionRow) + stats.controller.ts(upload/competitions)
 
-// GET /seasons/registry — DB에서 관리하는 '등록된 시즌'(허용 시즌명 사전)
-export interface Season {
+// GET /competitions — DB에서 관리하는 '등록된 대회'. (연도, 시즌번호(선택), 대회명)으로 관리한다.
+export interface Competition {
   id: number;
-  name: string; // 시즌명 (예: 나이배, 25-1시즌)
+  year: number; // 연도 (예: 2026)
+  seasonNo: number | null; // 시즌번호(선택). 지정 안 하면 null.
+  name: string; // 대회명 (예: 나이배)
+  label: string; // 표시 라벨(예: "2026 시즌3 · 나이배" / "2026 나이배"). 업로드/집계에서 쓰는 값.
   createdAt: string; // 등록 시각(ISO 문자열)
 }
 
@@ -149,10 +152,11 @@ export interface ParseWarning {
   message: string; // 사람이 읽는 설명
 }
 
-// POST /upload 응답: 엑셀 파싱 → DB 적재 결과
+// POST /upload 응답: 엑셀 파싱 → 대회 upsert → DB 적재 결과
 export interface UploadResult {
   ok: boolean;
-  season: string; // 실제로 적재된 시즌 라벨(비우면 파일명 사용)
+  competitionId: number; // 적재된 대회의 id
+  competition: string; // 적재된 대회의 표시 라벨(=label)
   sheet: string; // 서버가 읽은 시트 이름(보통 Rawdata)
   mode: 'replace' | 'append'; // 교체 적재 / 증분 추가
   imported: number; // 적재된 이벤트(스탯) 행 수

@@ -1,28 +1,29 @@
 import { useState } from 'react';
 import { api } from '../api/client';
 import { useApi } from '../api/useApi';
-import { useSeason } from '../context/SeasonContext';
+// [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — useSeason → useCompetition(리네임).
+import { useCompetition } from '../context/CompetitionContext';
 import type { GameBox, GameSummary, PlayerLine } from '../api/types';
 import { BoxScoreTable } from './BoxScoreTable';
-import { SeasonPicker } from './SeasonPicker';
+import { CompetitionPicker } from './CompetitionPicker';
 import { Empty, ErrorView, Loading } from './states';
 import { gameLabel } from '../lib/format';
 import { seriesColor } from '../theme/palette';
 import { useTheme } from '../theme/ThemeContext';
 
 // 대시보드 안에서 "경기 하나"를 골라 그 경기 스탯을 바로 보는 패널.
-// 시즌은 전역 필터(useSeason)를 그대로 따라가고, 경기는 이 안의 드롭다운으로 고른다.
+// 대회는 전역 필터(useCompetition)를 그대로 따라가고, 경기는 이 안의 드롭다운으로 고른다.
 // 화면 이동 없이 대시보드에서 바로: (1) 팀 요약 한 줄씩 + (2) 선수별 박스스코어.
 //
-// props 없음 — 시즌은 컨텍스트에서 읽고, 경기 선택/불러오기/합계는 전부 안에서 처리한다.
+// props 없음 — 대회는 컨텍스트에서 읽고, 경기 선택/불러오기/합계는 전부 안에서 처리한다.
 // 그래서 대시보드는 <GameStatsPanel /> 한 줄만 쓰면 된다.
 
 export function GameStatsPanel() {
-  const { season } = useSeason();
+  const { competitionId } = useCompetition();
   const { tokens } = useTheme();
 
-  // 시즌 필터가 바뀌면 경기 목록도 다시 불러온다. 목록은 시즌→주차→경기 오름차순.
-  const gamesState = useApi(() => api.games(season), [season]);
+  // 대회 필터가 바뀌면 경기 목록도 다시 불러온다. 목록은 대회→주차→경기 오름차순.
+  const gamesState = useApi(() => api.games(competitionId), [competitionId]);
   const games = gamesState.data;
 
   // 사용자가 고른 경기 id. 아직 안 골랐으면 null → 아래에서 '최신 경기'로 대체한다.
@@ -49,11 +50,11 @@ export function GameStatsPanel() {
     <section className="card">
       <div className="card-head">
         <h2 className="card-title">경기 단위 통계</h2>
-        {/* [변경: 2026-07-14 14:56, 김병현 수정] 시즌 선택과 경기 선택을 따로 둔다.
-            시즌 선택기(SeasonPicker=전역 시즌 필터 재사용) + 경기 선택기를 나란히·분리 배치. */}
+        {/* [변경: 2026-07-14 17:32, 김병현 수정] 대회 선택과 경기 선택을 따로 둔다.
+            대회 선택기(CompetitionPicker=전역 대회 필터 재사용) + 경기 선택기를 나란히·분리 배치. */}
         <div className="stat-filters">
-          <SeasonPicker />
-          {/* 경기 드롭다운: 고른 시즌 안의 경기 중 하나. 기본값은 최신 경기. */}
+          <CompetitionPicker />
+          {/* 경기 드롭다운: 고른 대회 안의 경기 중 하나. 기본값은 최신 경기. */}
           {list.length > 0 && (
             <label className="game-pick">
               <span className="game-pick-caption">경기</span>
@@ -65,7 +66,7 @@ export function GameStatsPanel() {
               >
                 {list.map((g) => (
                   <option key={g.id} value={g.id}>
-                    {optionLabel(g, season)}
+                    {optionLabel(g, competitionId)}
                   </option>
                 ))}
               </select>
@@ -79,7 +80,7 @@ export function GameStatsPanel() {
         <ErrorView message={gamesState.error} onRetry={gamesState.reload} />
       )}
       {games && games.length === 0 && (
-        <Empty>{season ? `${season} 시즌엔` : '아직'} 경기 기록이 없어요.</Empty>
+        <Empty>{competitionId != null ? '이 대회엔' : '아직'} 경기 기록이 없어요.</Empty>
       )}
 
       {/* 고른 경기의 표: 팀 요약 → 팀별 선수 박스스코어 */}
@@ -195,10 +196,12 @@ function pct(makes: number, atts: number): number | null {
 
 const pctText = (p: number | null) => (p == null ? '—' : `${p}%`);
 
-// 드롭다운 한 줄 라벨. 전체 시즌을 보고 있으면 시즌도 붙여 주차·경기 충돌을 막는다.
+// 드롭다운 한 줄 라벨. 전체 대회를 보고 있으면 대회 라벨도 붙여 주차·경기 충돌을 막는다.
 // 예: "봄 · 3주 2경기 · A 58 : B 52"
-function optionLabel(g: GameSummary, season: string): string {
-  const head = season ? '' : `${g.season} · `;
+// [변경: 2026-07-14 17:32, 김병현 수정] 시그니처 season:string → competitionId:number|null.
+// g.competition(대회 표시 라벨)은 값 그대로 붙이고, "전체"인지 판단은 competitionId 로 한다.
+function optionLabel(g: GameSummary, competitionId: number | null): string {
+  const head = competitionId == null ? `${g.competition} · ` : '';
   const score = g.teams.map((t) => `${t.team} ${t.score}`).join(' : ');
   return `${head}${gameLabel(g.week, g.game)}${score ? ` · ${score}` : ''}`;
 }

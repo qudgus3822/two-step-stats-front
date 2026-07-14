@@ -1,8 +1,9 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { useTheme } from '../theme/ThemeContext';
-import { SeasonPicker } from './SeasonPicker';
+// [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — SeasonPicker → CompetitionPicker(리네임).
+import { CompetitionPicker } from './CompetitionPicker';
 
-// 앱 껍데기: 위쪽 헤더(로고 + 메뉴 + 시즌선택 + 다크모드 토글) + 아래 본문.
+// 앱 껍데기: 위쪽 헤더(로고 + 메뉴 + 대회선택 + 다크모드 토글) + 아래 본문.
 // 모든 페이지가 이 안에 <Outlet/> 으로 끼워진다.
 
 // 라이트/다크 전환 버튼. 해/달 이모지로 지금 상태를 보여준다.
@@ -56,7 +57,7 @@ export function Layout() {
         </nav>
 
         <div className="topbar-controls">
-          <SeasonPicker />
+          <CompetitionPicker />
           <ThemeToggle />
         </div>
       </header>
