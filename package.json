@@ -1,0 +1,26 @@
+{
+  "name": "two-step-stats-front",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "투스텝 스탯 API(농구 동호회 기록)를 시각화하는 React + Vite 대시보드",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2",
+    "recharts": "^2.13.3"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  }
+}

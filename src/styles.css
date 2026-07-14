@@ -1,0 +1,647 @@
+/* ─────────────────────────────────────────────────────────────────────
+   전역 스타일 + 색 토큰.
+   색은 dataviz 스킬의 검증된 팔레트를 CSS 변수로 옮긴 것(palette.ts와 같은 값).
+   라이트가 기본, [data-theme="dark"] 또는 OS 다크 설정이면 다크로 스위치된다.
+   ───────────────────────────────────────────────────────────────────── */
+
+:root {
+  --surface: #fcfcfb;
+  --page: #f9f9f7;
+  --text: #0b0b0b;
+  --text-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --baseline: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.1);
+
+  --series-1: #2a78d6;
+  --series-2: #1baf7a;
+  --series-5: #4a3aa7;
+  --series-8: #eb6834;
+  --sequential: #2a78d6;
+
+  --good: #0ca30c;
+  --loss: #d03b3b;
+  --draw: #fab219;
+
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+/* 다크 토큰: 토글(data-theme)이 이기고, JS 없을 땐 OS 설정을 따른다 */
+:root[data-theme='dark'] {
+  --surface: #1a1a19;
+  --page: #0d0d0d;
+  --text: #ffffff;
+  --text-2: #c3c2b7;
+  --muted: #898781;
+  --grid: #2c2c2a;
+  --baseline: #383835;
+  --border: rgba(255, 255, 255, 0.1);
+
+  --series-1: #3987e5;
+  --series-2: #199e70;
+  --series-5: #9085e9;
+  --series-8: #d95926;
+  --sequential: #3987e5;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme='light'])) {
+    --surface: #1a1a19;
+    --page: #0d0d0d;
+    --text: #ffffff;
+    --text-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255, 255, 255, 0.1);
+
+    --series-1: #3987e5;
+    --series-2: #199e70;
+    --series-5: #9085e9;
+    --series-8: #d95926;
+    --sequential: #3987e5;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.4);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+/* ── 앱 껍데기 / 헤더 ─────────────────────────────────────────── */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 22px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: saturate(1.4) blur(8px);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 750;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+}
+.brand-mark {
+  font-size: 20px;
+}
+
+.nav {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.nav-link {
+  padding: 7px 13px;
+  border-radius: 999px;
+  color: var(--text-2);
+  font-weight: 550;
+  font-size: 14px;
+  transition: background 0.14s, color 0.14s;
+}
+.nav-link:hover {
+  background: color-mix(in srgb, var(--series-1) 12%, transparent);
+  color: var(--text);
+}
+.nav-link--active {
+  background: var(--series-1);
+  color: #fff;
+}
+
+.topbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 26px 22px 64px;
+}
+
+/* ── 페이지 헤더 ─────────────────────────────────────────────── */
+
+.page-head {
+  margin-bottom: 20px;
+}
+.page-title {
+  font-size: 26px;
+}
+.page-sub {
+  margin: 6px 0 0;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.breadcrumb {
+  margin-bottom: 14px;
+}
+
+/* ── 카드 ────────────────────────────────────────────────────── */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 18px 16px;
+  box-shadow: var(--shadow);
+}
+.card + .card {
+  margin-top: 18px;
+}
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.card-title {
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-note {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+  margin-top: 18px;
+}
+.grid-2 .card {
+  margin-top: 0;
+}
+
+/* ── 요약 스탯 카드 ───────────────────────────────────────────── */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--series-1);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+}
+.stat-label {
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 550;
+}
+.stat-value {
+  font-size: 30px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  margin-top: 2px;
+}
+.stat-hint {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+/* ── 표 ──────────────────────────────────────────────────────── */
+
+.table-wrap {
+  overflow-x: auto;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.table th,
+.table td {
+  padding: 9px 10px;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+.table thead th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 12.5px;
+  border-bottom: 1px solid var(--baseline);
+}
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+.table tbody tr:hover {
+  background: color-mix(in srgb, var(--series-1) 6%, transparent);
+}
+.col-name,
+.table th.col-name {
+  text-align: left;
+}
+.col-rank {
+  width: 40px;
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}
+.strong {
+  font-weight: 700;
+}
+.muted {
+  color: var(--muted);
+}
+.table-empty {
+  padding: 18px 10px;
+  color: var(--muted);
+}
+
+.link {
+  color: var(--series-1);
+  font-weight: 550;
+}
+.link:hover {
+  text-decoration: underline;
+}
+
+/* ── 뱃지 ────────────────────────────────────────────────────── */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.7;
+}
+.badge--win {
+  background: color-mix(in srgb, var(--good) 16%, transparent);
+  color: var(--good);
+}
+.badge--loss {
+  background: color-mix(in srgb, var(--loss) 16%, transparent);
+  color: var(--loss);
+}
+.badge--draw {
+  background: color-mix(in srgb, var(--draw) 22%, transparent);
+  color: color-mix(in srgb, var(--draw) 70%, #000);
+}
+.badge--team {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--text-2);
+}
+.badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+/* ── 버튼 / 입력 ─────────────────────────────────────────────── */
+
+.btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  padding: 7px 13px;
+  border-radius: 9px;
+  font: inherit;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background 0.14s, border-color 0.14s;
+}
+.btn:hover {
+  border-color: var(--baseline);
+  background: color-mix(in srgb, var(--series-1) 8%, var(--surface));
+}
+.btn--icon {
+  padding: 7px 10px;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.select,
+.search {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  padding: 7px 12px;
+  border-radius: 9px;
+  font: inherit;
+}
+.select:focus,
+.search:focus {
+  outline: 2px solid color-mix(in srgb, var(--series-1) 55%, transparent);
+  outline-offset: 1px;
+}
+.search {
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 14px;
+}
+
+.season-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+}
+.season-picker-caption {
+  color: var(--muted);
+}
+.season-picker--muted {
+  color: var(--muted);
+}
+
+/* ── 리더보드 지표 탭 ─────────────────────────────────────────── */
+
+.metric-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+.metric-tab {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: all 0.14s;
+}
+.metric-tab:hover {
+  color: var(--text);
+  border-color: var(--baseline);
+}
+.metric-tab.is-active {
+  background: var(--series-1);
+  border-color: var(--series-1);
+  color: #fff;
+}
+
+/* ── 경기 목록 ───────────────────────────────────────────────── */
+
+.game-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.game-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  transition: border-color 0.14s, transform 0.06s;
+}
+.game-row:hover {
+  border-color: var(--series-1);
+}
+.game-row:active {
+  transform: translateY(1px);
+}
+.game-when {
+  display: flex;
+  flex-direction: column;
+}
+.game-week {
+  font-weight: 650;
+}
+.game-season {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.game-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.game-side {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.game-team {
+  color: var(--text-2);
+  font-weight: 600;
+}
+.game-points {
+  font-size: 20px;
+  font-weight: 700;
+}
+.game-team.is-winner,
+.game-points.is-winner {
+  color: var(--series-1);
+}
+.game-colon {
+  color: var(--muted);
+  margin: 0 2px;
+}
+.game-meta {
+  text-align: right;
+  color: var(--muted);
+  font-size: 13px;
+}
+.dot-sep {
+  margin: 0 6px;
+}
+
+/* ── 스코어보드(경기 상세) ────────────────────────────────────── */
+
+.scoreboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.score-team {
+  border-top: 3px solid var(--series-1);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+}
+.score-team.is-winner {
+  background: color-mix(in srgb, var(--series-1) 8%, transparent);
+}
+.score-team-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 650;
+}
+.score-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--good);
+  background: color-mix(in srgb, var(--good) 16%, transparent);
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+.score-team-pts {
+  font-size: 34px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+.team-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+/* ── 슈팅 스플릿 게이지 ───────────────────────────────────────── */
+
+.splits {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.split-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 54px 46px;
+  align-items: center;
+  gap: 10px;
+}
+.split-label {
+  color: var(--text-2);
+  font-weight: 550;
+  font-size: 13px;
+}
+.split-meter {
+  height: 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  overflow: hidden;
+}
+.split-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--sequential);
+  transition: width 0.3s ease;
+}
+.split-attempts {
+  text-align: right;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+.split-value {
+  text-align: right;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 상태(로딩/에러/빈값) ─────────────────────────────────────── */
+
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 44px 20px;
+  color: var(--text-2);
+  text-align: center;
+}
+.state--error {
+  color: var(--loss);
+}
+.state--empty {
+  color: var(--muted);
+}
+.spinner {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 3px solid var(--grid);
+  border-top-color: var(--series-1);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Recharts 표면 배경이 카드와 섞이도록 여백만 조금 */
+.chart-card .recharts-wrapper {
+  font-family: inherit;
+}
+
+@media (max-width: 560px) {
+  .container {
+    padding: 20px 14px 48px;
+  }
+  .game-row {
+    grid-template-columns: 1fr auto;
+  }
+  .game-meta {
+    display: none;
+  }
+  .nav-link {
+    padding: 6px 10px;
+  }
+}
