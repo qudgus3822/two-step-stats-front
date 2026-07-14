@@ -4,6 +4,7 @@ import { useApi } from '../api/useApi';
 import { useSeason } from '../context/SeasonContext';
 import type { GameBox, GameSummary, PlayerLine } from '../api/types';
 import { BoxScoreTable } from './BoxScoreTable';
+import { SeasonPicker } from './SeasonPicker';
 import { Empty, ErrorView, Loading } from './states';
 import { gameLabel } from '../lib/format';
 import { seriesColor } from '../theme/palette';
@@ -48,24 +49,29 @@ export function GameStatsPanel() {
     <section className="card">
       <div className="card-head">
         <h2 className="card-title">경기 단위 통계</h2>
-        {/* 경기 드롭다운: 시즌 필터 안의 경기 중 하나. 기본값은 최신 경기. */}
-        {list.length > 0 && (
-          <label className="game-pick">
-            <span className="game-pick-caption">경기</span>
-            <select
-              className="select"
-              value={activeId ?? ''}
-              onChange={(e) => setPickedId(e.target.value)}
-              aria-label="경기 선택"
-            >
-              {list.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {optionLabel(g, season)}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
+        {/* [변경: 2026-07-14 14:56, 김병현 수정] 시즌 선택과 경기 선택을 따로 둔다.
+            시즌 선택기(SeasonPicker=전역 시즌 필터 재사용) + 경기 선택기를 나란히·분리 배치. */}
+        <div className="stat-filters">
+          <SeasonPicker />
+          {/* 경기 드롭다운: 고른 시즌 안의 경기 중 하나. 기본값은 최신 경기. */}
+          {list.length > 0 && (
+            <label className="game-pick">
+              <span className="game-pick-caption">경기</span>
+              <select
+                className="select"
+                value={activeId ?? ''}
+                onChange={(e) => setPickedId(e.target.value)}
+                aria-label="경기 선택"
+              >
+                {list.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {optionLabel(g, season)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
       </div>
 
       {gamesState.loading && <Loading />}
