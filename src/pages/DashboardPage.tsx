@@ -4,7 +4,7 @@ import { useApi } from '../api/useApi';
 import { useSeason } from '../context/SeasonContext';
 import { BarRanking, type BarDatum } from '../components/charts/BarRanking';
 import { GameStatsPanel } from '../components/GameStatsPanel';
-import { StatCard } from '../components/StatCard';
+// [변경: 2026-07-14 14:56, 김병현 수정] 요약 카드 제거로 StatCard import 삭제.
 import { Empty, ErrorView, Loading } from '../components/states';
 import { statCodeLabel } from '../lib/format';
 import { useTheme } from '../theme/ThemeContext';
@@ -42,18 +42,7 @@ export function DashboardPage() {
 
       {summary && summary.events > 0 && (
         <>
-          {/* 요약 카드: 큰 숫자 하나씩 */}
-          <div className="stat-grid">
-            <StatCard label="시즌" value={summary.seasons} accent={tokens.series[0]} />
-            <StatCard label="경기" value={summary.games} accent={tokens.series[1]} />
-            <StatCard label="선수" value={summary.players} accent={tokens.series[4]} />
-            <StatCard
-              label="기록 이벤트"
-              value={summary.events.toLocaleString()}
-              hint="엑셀에서 읽은 스탯 한 줄 = 1"
-              accent={tokens.series[7]}
-            />
-          </div>
+          {/* [변경: 2026-07-14 14:56, 김병현 수정] 상단 요약 카드 4개(시즌/경기/선수/기록이벤트) 제거 — 사용자 요청. */}
 
           {/* [변경: 2026-07-14 14:43, 김병현 수정] 경기 단위 통계표 추가.
               시즌(전역 필터) + 경기(드롭다운)를 고르면 그 경기 스탯을 한눈에. */}
