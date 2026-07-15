@@ -1,17 +1,32 @@
 import type {
   Competition,
   GameBox,
+  GameConflict,
   GameSummary,
   LeaderboardMetric,
   LeaderboardRow,
   PlayerDetail,
   PlayerListItem,
   Summary,
+  UploadConflictBody,
   UploadResult,
 } from './types';
 
 // 백엔드 호출을 한 곳에 모은 얇은 API 클라이언트.
 // 화면 코드는 fetch/URL 조립을 몰라도 되고, api.games(competitionId) 처럼만 부른다.
+
+// [변경: 2026-07-15 14:10, 김병현 수정] 409(중복 경기)는 문자열 메시지로 뭉개지 말고,
+// 충돌 목록을 살려 던진다 → 화면이 "덮어쓸까요?" 모달에 경기 목록을 보여줄 수 있게.
+export class UploadConflictError extends Error {
+  constructor(
+    readonly conflicts: GameConflict[],
+    readonly competition: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'UploadConflictError';
+  }
+}
 
 // API 주소: 환경변수 우선, 없으면 로컬 3000. 끝의 슬래시는 떼서 이중 슬래시 방지.
 const BASE = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000').replace(
@@ -84,18 +99,20 @@ async function del<T>(path: string): Promise<T> {
 // 별도 함수로 둔다. 파싱/DB 적재는 전부 서버(POST /upload)가 하고, 여기선 파일+대회 정보만 넘긴다.
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회는 이제 "연도+시즌번호(선택)+대회명" 3값으로 넘긴다
 // (옛 season 문자열 1개 대신). 서버가 이 3값으로 Competition 을 upsert 한다.
+// [변경: 2026-07-15 14:10, 김병현 수정] mode 단일값 대신 옵션 객체로 — force(강행 재전송) 추가.
 async function uploadWorkbook(
   file: File,
   c: { year: number; seasonNo: number | null; name: string },
-  mode: 'replace' | 'append',
+  opts: { mode: 'replace' | 'append'; force: boolean },
 ): Promise<UploadResult> {
   const form = new FormData();
   form.append('file', file); // 서버는 'file' 필드로 받는다(FileInterceptor)
 
-  const q = new URLSearchParams({ mode });
+  const q = new URLSearchParams({ mode: opts.mode });
   q.set('year', String(c.year));
   if (c.seasonNo != null) q.set('seasonNo', String(c.seasonNo));
   q.set('name', c.name.trim());
+  if (opts.force) q.set('force', 'true'); // [변경: 2026-07-15 14:10, 김병현 수정] 덮어쓰기 강행
 
   let res: Response;
   try {
@@ -111,14 +128,19 @@ async function uploadWorkbook(
   }
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
-    let message = detail;
+    let parsed: unknown = null;
     try {
       // Nest 예외는 { message } 형태가 많음
-      const parsed = JSON.parse(detail);
-      message = parsed.message ?? detail;
+      parsed = JSON.parse(detail);
     } catch {
       /* JSON 아니면 원문 그대로 */
     }
+    // [변경: 2026-07-15 14:10, 김병현 수정] 409 + conflict:true 면 충돌 목록을 살려 전용 에러로.
+    if (res.status === 409 && (parsed as UploadConflictBody | null)?.conflict === true) {
+      const body = parsed as UploadConflictBody;
+      throw new UploadConflictError(body.games, body.competition, body.message);
+    }
+    const message = (parsed as { message?: string } | null)?.message ?? detail;
     throw new Error(message || `업로드 실패 (HTTP ${res.status})`);
   }
   return res.json() as Promise<UploadResult>;
@@ -150,11 +172,12 @@ export const api = {
   },
 
   // 엑셀 기록지 업로드 → 서버가 파싱 후 DB 적재. mode 기본값은 '교체'(replace).
+  // [변경: 2026-07-15 14:10, 김병현 수정] force(강행 재전송) 옵션 추가 — 덮어쓰기 확인 후 재전송에 씀.
   upload: (
     file: File,
     c: { year: number; seasonNo: number | null; name: string },
-    mode: 'replace' | 'append' = 'replace',
-  ) => uploadWorkbook(file, c, mode),
+    opts?: { mode?: 'replace' | 'append'; force?: boolean },
+  ) => uploadWorkbook(file, c, { mode: opts?.mode ?? 'replace', force: opts?.force ?? false }),
 
   // 대회 등록부: 등록된 대회 목록 (등록은 upload 가 자동으로 upsert 해서 별도 호출 없음) / 등록 해제
   competitions: () => request<Competition[]>('/competitions'),

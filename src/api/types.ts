@@ -163,3 +163,17 @@ export interface UploadResult {
   unknownCodes: string[]; // 사전에 없는 스텟 코드 목록(오타 의심)
   warnings: ParseWarning[]; // 행 단위 경고 목록
 }
+
+// [변경: 2026-07-15 14:10, 김병현 수정] 업로드 중복 경기 409 계약(서버 types.ts 미러).
+export interface GameConflict {
+  week: number;
+  game: number;
+  existingCount: number;
+}
+export interface UploadConflictBody {
+  conflict: true;
+  competitionId: number;
+  competition: string;
+  games: GameConflict[];
+  message: string;
+}

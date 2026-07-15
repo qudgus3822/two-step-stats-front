@@ -5,12 +5,18 @@ import {
   type FormEvent,
 } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../api/client';
+// [변경: 2026-07-15 10:28, 김병현 수정] 업로드/삭제를 React Query 뮤테이션으로
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+// 주의: queryKeys 는 import 하지 않는다 — 대회 목록 무효화는 컨텍스트가 노출한 refresh() 를 재사용한다.
+import { invalidateAfterUpload } from '../api/queries';
+// [변경: 2026-07-15 14:10, 김병현 수정] 409(중복 경기) 판별 에러 — 잡아서 덮어쓰기 확인 모달을 연다.
+import { api, UploadConflictError } from '../api/client';
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — useSeason → useCompetition(리네임).
 // 대회 목록은 이제 전역 컨텍스트가 들고 있어서(등록/새로고침 공유), 이 화면이 따로 fetch 하지 않는다.
 import { useCompetition } from '../context/CompetitionContext';
-import type { Competition, UploadResult } from '../api/types';
+import type { Competition, GameConflict, UploadResult } from '../api/types';
 import { ErrorView, Loading } from '../components/states';
+import { OverwriteConfirmModal } from '../components/OverwriteConfirmModal';
 
 // 기록지 엑셀 업로드 화면.
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — 업로드할 엑셀은 여전히 6컬럼
@@ -50,6 +56,8 @@ function parseSeasonNoInput(raw: string): number {
 const YEAR_OPTIONS = [2030, 2029, 2028, 2027, 2026, 2025, 2024, 2023];
 
 export function UploadPage() {
+  // [변경: 2026-07-15 10:28, 김병현 수정] invalidateAfterUpload(queryClient) 에서 쓰인다(업로드 성공 시 캐시 정리).
+  const queryClient = useQueryClient();
   const {
     competitions,
     refresh,
@@ -62,21 +70,62 @@ export function UploadPage() {
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [seasonNo, setSeasonNo] = useState<number | null>(null);
   const [name, setName] = useState<string>('');
-  const [deletingId, setDeletingId] = useState<number | null>(null);
-  const [competitionError, setCompetitionError] = useState<string | null>(null);
+  // [변경: 2026-07-15 10:28, 김병현 수정] deletingId/competitionError 제거 → deleteMutation 상태로 대체.
 
   // 파일 업로드 상태
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [result, setResult] = useState<UploadResult | null>(null);
+  // [변경: 2026-07-15 10:28, 김병현 수정] uploading/uploadError/result 제거 → uploadMutation 상태로 대체.
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // [변경: 2026-07-15 14:10, 김병현 수정] 409(중복 경기) 응답을 받으면 여기에 담아 확인 모달을 띄운다.
+  const [conflict, setConflict] = useState<{ competition: string; games: GameConflict[] } | null>(
+    null,
+  );
+
+  // 업로드 뮤테이션: 파일+대회정보 → 서버 upsert+적재. 성공 시 광범위 무효화 후 방금 올린 대회로 이동.
+  // [변경: 2026-07-15 10:28, 김병현 수정] useApi 대신 React Query useMutation. force 는 409(중복 경기)
+  // 확인 모달에서 '덮어쓰기'를 눌렀을 때만 true — 기존 performUpload(force) 흐름은 그대로 유지한다.
+  const uploadMutation = useMutation({
+    mutationFn: (vars: {
+      file: File;
+      c: { year: number; seasonNo: number | null; name: string };
+      force: boolean;
+    }) => api.upload(vars.file, vars.c, { force: vars.force }), // mode 기본 'replace'
+    onSuccess: async (res) => {
+      setConflict(null); // 성공 → 모달 닫기(기존 catch 분기와 동일한 동작 유지)
+      // append 모드는 competitionId 가 그대로라 세부 키가 안 바뀜 → 리소스 접두어로 통째 무효화(fan-out).
+      await invalidateAfterUpload(queryClient);
+      setCompetitionId(res.competitionId); // 방금 올린 대회로 이동 → 바로 확인
+    },
+    // 409(중복 경기)면 모달을 열고, 그 외 에러는 uploadMutation.error 로 남겨 인라인 ErrorView 로 보여준다
+    // (기존 try/catch 의 "UploadConflictError 면 모달, 아니면 uploadError" 상호배타 분기를 그대로 옮김).
+    onError: (err) => {
+      if (err instanceof UploadConflictError) {
+        setConflict({ competition: err.competition, games: err.conflicts });
+      }
+    },
+  });
+
+  // 대회 등록 해제 뮤테이션. 성공 시 컨텍스트의 refresh() 로 대회 목록만 무효화.
+  // (경기 있는 대회는 서버가 409 로 막아 종속 무효화 불필요.
+  //  "대회 목록 무효화" 지식은 컨텍스트에 이미 있으니 여기서 재구현하지 않고 재사용한다 = 정보은닉.)
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.deleteCompetition(id),
+    onSuccess: () => refresh(),
+  });
 
   // 대회명이 비어 있으면 라벨을 만들 수 없으니 미리보기도 비운다(입력 중엔 조용히 기다린다).
   const trimmedName = name.trim();
   const preview = trimmedName ? competitionLabel(year, seasonNo, trimmedName) : null;
-  const canUpload = !!file && !!trimmedName && year > 0 && !uploading;
+  // [변경: 2026-07-15 10:28, 김병현 수정] uploading → uploadMutation.isPending
+  const canUpload = !!file && !!trimmedName && year > 0 && !uploadMutation.isPending;
+  // [변경: 2026-07-15 10:28, 김병현 수정] uploadMutation.error 파생값. UploadConflictError 는 모달로 따로
+  // 보여주므로 인라인 에러 박스에서는 제외한다(기존 catch 분기와 동일한 상호배타 유지).
+  const uploadError =
+    uploadMutation.error && !(uploadMutation.error instanceof UploadConflictError)
+      ? uploadMutation.error.message
+      : null;
+  const result = uploadMutation.data ?? null;
 
   // 등록된 칩을 누르면 그 대회의 (연도,시즌번호,대회명)으로 선택값을 채운다.
   function pickRegistered(c: Competition) {
@@ -87,24 +136,16 @@ export function UploadPage() {
 
   // 대회 등록 해제. FK(Restrict) 때문에 경기 기록이 있는 대회는 서버가 409 로 막는다 —
   // 그 경우 에러 메시지를 그대로 사람이 읽는 문구로 보여준다.
-  async function handleDelete(id: number) {
-    setDeletingId(id);
-    setCompetitionError(null);
-    try {
-      await api.deleteCompetition(id);
-      await refresh();
-    } catch (err) {
-      setCompetitionError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setDeletingId(null);
-    }
+  // [변경: 2026-07-15 10:28, 김병현 수정] try/catch/finally → deleteMutation.mutate (이전 에러/상태는 mutate 가 알아서 리셋)
+  function handleDelete(id: number) {
+    deleteMutation.mutate(id);
   }
 
   // 파일 선택 확정(클릭 or 드롭 공용). 새 파일을 고르면 이전 결과/에러는 지운다.
+  // [변경: 2026-07-15 10:28, 김병현 수정] setUploadError(null)+setResult(null) → uploadMutation.reset()
   function pickFile(next: File | null) {
     setFile(next);
-    setUploadError(null);
-    setResult(null);
+    uploadMutation.reset();
   }
 
   function handleDrop(e: DragEvent<HTMLLabelElement>) {
@@ -115,31 +156,28 @@ export function UploadPage() {
   }
 
   // "또 올리기": 파일만 비우고 대회 선택은 유지(같은 대회에 다음 경기 올릴 때 편하게).
+  // [변경: 2026-07-15 10:28, 김병현 수정] setUploadError(null)+setResult(null) → uploadMutation.reset()
   function resetFile() {
     setFile(null);
-    setUploadError(null);
-    setResult(null);
+    uploadMutation.reset();
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
   // 업로드: 파일 + 대회 정보(연도/시즌번호/대회명)를 서버로 보낸다.
   // 별도 등록 호출이 없다 — 서버가 POST /upload 안에서 대회를 upsert(멱등)하고 그 id 로 적재한다.
-  async function handleUpload(e: FormEvent) {
-    e.preventDefault();
+  // [변경: 2026-07-15 14:10, 김병현 수정] 제출과 '덮어쓰기 확인' 재전송이 같은 경로를 타도록 통합.
+  // force=false 로 먼저 시도 → 서버가 409(중복)면 모달을 띄우고, 사용자가 확인하면 force=true 로 재전송.
+  // 재전송에 필요한 file/year/seasonNo/trimmedName 은 이미 이 컴포넌트 state 에 그대로 남아 있어
+  // (모달이 뜬 동안 화면 입력은 안 바뀜) 별도 스냅샷 없이 그대로 재사용한다.
+  // [변경: 2026-07-15 10:28, 김병현 수정] try/catch/finally → uploadMutation.mutate
+  function performUpload(force: boolean) {
     if (!file) return;
-    setUploading(true);
-    setUploadError(null);
-    setResult(null);
-    try {
-      const res = await api.upload(file, { year, seasonNo, name: trimmedName });
-      setResult(res);
-      await refresh(); // 새로 등록된 대회가 아래 칩/전역 목록에 뜨도록
-      setCompetitionId(res.competitionId); // 방금 올린 대회로 이동 → 바로 확인
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setUploading(false);
-    }
+    uploadMutation.mutate({ file, c: { year, seasonNo, name: trimmedName }, force });
+  }
+
+  function handleUpload(e: FormEvent) {
+    e.preventDefault();
+    performUpload(false);
   }
 
   return (
@@ -246,11 +284,12 @@ export function UploadPage() {
                     >
                       {c.label}
                     </button>
+                    {/* [변경: 2026-07-15 10:28, 김병현 수정] deletingId → deleteMutation 진행 상태(어느 칩이 삭제 중인지는 variables 로 구분) */}
                     <button
                       type="button"
                       className="season-chip-del"
                       onClick={() => handleDelete(c.id)}
-                      disabled={deletingId === c.id}
+                      disabled={deleteMutation.isPending && deleteMutation.variables === c.id}
                       aria-label={`${c.label} 등록 해제`}
                       title="등록 해제"
                     >
@@ -261,8 +300,9 @@ export function UploadPage() {
               </div>
             </>
           )}
-          {competitionError && (
-            <span className="field-hint field-hint--warn">{competitionError}</span>
+          {/* [변경: 2026-07-15 10:28, 김병현 수정] competitionError → deleteMutation.error.message */}
+          {deleteMutation.error && (
+            <span className="field-hint field-hint--warn">{deleteMutation.error.message}</span>
           )}
         </div>
       </section>
@@ -315,11 +355,12 @@ export function UploadPage() {
           </span>
         )}
 
+        {/* [변경: 2026-07-15 10:28, 김병현 수정] uploading → uploadMutation.isPending */}
         <div className="upload-actions">
           <button type="submit" className="btn btn--primary" disabled={!canUpload}>
-            {uploading ? '업로드 중…' : preview ? `${preview} 로 업로드` : '업로드'}
+            {uploadMutation.isPending ? '업로드 중…' : preview ? `${preview} 로 업로드` : '업로드'}
           </button>
-          {file && !uploading && (
+          {file && !uploadMutation.isPending && (
             <button type="button" className="btn" onClick={resetFile}>
               파일 지우기
             </button>
@@ -337,6 +378,19 @@ export function UploadPage() {
       )}
 
       {result && <UploadResultCard result={result} onReset={resetFile} />}
+
+      {/* [변경: 2026-07-15 14:10, 김병현 수정] 409(중복 경기) → 덮어쓰기 확인 모달.
+          취소는 setConflict(null) 만 — 파일/대회 선택은 그대로 두고(에러 아님) 모달만 닫는다. */}
+      {conflict && (
+        <OverwriteConfirmModal
+          competition={conflict.competition}
+          conflicts={conflict.games}
+          // [변경: 2026-07-15 10:28, 김병현 수정] uploading → uploadMutation.isPending
+          busy={uploadMutation.isPending}
+          onConfirm={() => performUpload(true)}
+          onCancel={() => setConflict(null)}
+        />
+      )}
     </div>
   );
 }

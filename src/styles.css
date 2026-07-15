@@ -956,6 +956,56 @@ h3 {
   font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
 }
 
+/* ── 덮어쓰기 확인 모달 ──────────────────────────────────────── */
+/* [변경: 2026-07-15 14:10, 김병현 수정] 업로드 중복 경기 덮어쓰기 확인 모달 스타일 추가. */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+}
+.modal {
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 20px 18px;
+  box-shadow: var(--shadow);
+}
+.modal-title {
+  font-size: 17px;
+  margin: 0 0 10px;
+}
+.modal-body {
+  margin: 0 0 12px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+.conflict-game-list {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--draw) 12%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
 @media (max-width: 560px) {
   .container {
     padding: 20px 14px 48px;
