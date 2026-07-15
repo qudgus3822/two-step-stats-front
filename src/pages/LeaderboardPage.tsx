@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../api/client';
-import { useApi } from '../api/useApi';
+// [변경: 2026-07-15 10:28, 김병현 수정] useApi → React Query useLeaderboard 로 이관
+import { useLeaderboard } from '../api/queries';
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — useSeason → useCompetition(리네임).
 import { useCompetition } from '../context/CompetitionContext';
 import { LEADERBOARD_METRICS, type LeaderboardMetric } from '../api/types';
@@ -18,10 +18,8 @@ export function LeaderboardPage() {
   const { competitionId, competitionLabel } = useCompetition();
   const [metric, setMetric] = useState<LeaderboardMetric>('pts');
   // [변경: 2026-07-14 17:49, 김병현 수정] limit 생략 → 상위 N 제한 없이 전체 선수 조회.
-  const { data, loading, error, reload } = useApi(
-    () => api.leaderboard(metric, undefined, competitionId),
-    [metric, competitionId],
-  );
+  // [변경: 2026-07-15 10:28, 김병현 수정] useApi → useLeaderboard(React Query)
+  const { data, isLoading, error, refetch } = useLeaderboard(metric, competitionId);
 
   return (
     <div className="page">
@@ -50,8 +48,9 @@ export function LeaderboardPage() {
         ))}
       </div>
 
-      {loading && <Loading />}
-      {error && <ErrorView message={error} onRetry={reload} />}
+      {/* [변경: 2026-07-15 10:28, 김병현 수정] loading→isLoading, error→error.message, reload→refetch */}
+      {isLoading && <Loading />}
+      {error && <ErrorView message={error.message} onRetry={() => refetch()} />}
       {data && data.length === 0 && <Empty>이 지표에 기록이 없어요.</Empty>}
 
       {data && data.length > 0 && (

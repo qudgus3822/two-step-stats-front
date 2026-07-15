@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { api } from '../api/client';
-import { useApi } from '../api/useApi';
+// [변경: 2026-07-15 10:28, 김병현 수정] useApi → React Query useGames/useGameBox 로 이관
+import { useGameBox, useGames } from '../api/queries';
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — useSeason → useCompetition(리네임).
 import { useCompetition } from '../context/CompetitionContext';
+// 주의: GameBox 는 아래 TeamSummary({ box }: { box: GameBox }) 시그니처에서 여전히 쓰이므로 type import 는 유지.
 import type { GameBox, GameSummary, PlayerLine } from '../api/types';
 import { BoxScoreTable } from './BoxScoreTable';
 import { CompetitionPicker } from './CompetitionPicker';
@@ -23,8 +24,9 @@ export function GameStatsPanel() {
   const { tokens } = useTheme();
 
   // 대회 필터가 바뀌면 경기 목록도 다시 불러온다. 목록은 대회→주차→경기 오름차순.
-  const gamesState = useApi(() => api.games(competitionId), [competitionId]);
-  const games = gamesState.data;
+  // [변경: 2026-07-15 10:28, 김병현 수정] useApi → useGames(React Query)
+  const gamesQuery = useGames(competitionId);
+  const games = gamesQuery.data;
 
   // 사용자가 고른 경기 id. 아직 안 골랐으면 null → 아래에서 '최신 경기'로 대체한다.
   const [pickedId, setPickedId] = useState<string | null>(null);
@@ -40,11 +42,10 @@ export function GameStatsPanel() {
       : (list[list.length - 1]?.id ?? null);
 
   // 고른 경기의 박스스코어(양 팀·선수별). 고른 경기가 없으면 아예 안 부른다.
-  const boxState = useApi<GameBox | null>(
-    () => (activeId ? api.game(activeId) : Promise.resolve(null)),
-    [activeId],
-  );
-  const box = boxState.data;
+  // [변경: 2026-07-15 10:28, 김병현 수정] useApi → useGameBox(React Query). activeId 가 null 이면
+  // enabled:false 로 안 부른다(무한 스피너 방지는 loading→isLoading 매핑이 담당).
+  const boxQuery = useGameBox(activeId);
+  const box = boxQuery.data;
 
   return (
     <section className="card">
@@ -75,9 +76,10 @@ export function GameStatsPanel() {
         </div>
       </div>
 
-      {gamesState.loading && <Loading />}
-      {gamesState.error && (
-        <ErrorView message={gamesState.error} onRetry={gamesState.reload} />
+      {/* [변경: 2026-07-15 10:28, 김병현 수정] loading→isLoading, error→error.message, reload→refetch */}
+      {gamesQuery.isLoading && <Loading />}
+      {gamesQuery.error && (
+        <ErrorView message={gamesQuery.error.message} onRetry={() => gamesQuery.refetch()} />
       )}
       {games && games.length === 0 && (
         <Empty>{competitionId != null ? '이 대회엔' : '아직'} 경기 기록이 없어요.</Empty>
@@ -86,9 +88,10 @@ export function GameStatsPanel() {
       {/* 고른 경기의 표: 팀 요약 → 팀별 선수 박스스코어 */}
       {list.length > 0 && (
         <>
-          {boxState.loading && <Loading />}
-          {boxState.error && (
-            <ErrorView message={boxState.error} onRetry={boxState.reload} />
+          {/* [변경: 2026-07-15 10:28, 김병현 수정] loading→isLoading(isPending 아님 — 비활성 쿼리 무한 스피너 방지) */}
+          {boxQuery.isLoading && <Loading />}
+          {boxQuery.error && (
+            <ErrorView message={boxQuery.error.message} onRetry={() => boxQuery.refetch()} />
           )}
           {box && (
             <>
@@ -128,11 +131,11 @@ function TeamSummary({ box }: { box: GameBox }) {
           <tr>
             <th className="col-name">팀</th>
             <th>점수</th>
-            <th>리바</th>
-            <th>AS</th>
-            <th>ST</th>
-            <th>BL</th>
-            <th>TO</th>
+            <th>리바운드</th>
+            <th>어시스트</th>
+            <th>스틸</th>
+            <th>블락</th>
+            <th>턴오버</th>
             <th>야투%</th>
             <th>3점%</th>
           </tr>

@@ -8,7 +8,9 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { api } from '../api/client';
+// [변경: 2026-07-15 10:28, 김병현 수정] api 직접 호출 대신 React Query 훅/키/클라이언트 사용
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys, useCompetitionsQuery } from '../api/queries';
 import type { Competition } from '../api/types';
 
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — 옛 SeasonContext(문자열 시즌 필터)를
@@ -31,41 +33,29 @@ export interface CompetitionContextValue {
 const CompetitionContext = createContext<CompetitionContextValue | null>(null);
 
 export function CompetitionProvider({ children }: { children: ReactNode }) {
-  const [competitions, setCompetitions] = useState<Competition[]>([]);
+  // [변경: 2026-07-15 10:28, 김병현 수정] 대회 목록/로딩/에러를 React Query 로 위임
+  const queryClient = useQueryClient();
+  const competitionsQuery = useCompetitionsQuery();
+  // data 가 undefined(첫 로드)여도 항상 배열로 다룬다. 참조 안정화를 위해 memo.
+  const competitions = useMemo<Competition[]>(
+    () => competitionsQuery.data ?? [],
+    [competitionsQuery.data],
+  );
+
   const [competitionId, setCompetitionIdState] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   // [변경: 2026-07-14, 김병현 수정] 첫 목록 로드 때 '가장 최근 대회'를 기본 선택으로 잡았는지 표시.
   // 딱 한 번만 적용하려는 가드 — 이후 사용자가 '전체 대회'(null)를 골라도 refresh 때 되돌리지 않는다.
   const defaultedRef = useRef(false);
 
-  // 목록 로딩을 load()로 빼서 mount·업로드후 둘 다 재사용.
-  // 대회 목록을 서버에서 가져와 상태에 반영한다. loading 은 처음(true)에서만 내려가고,
-  // 새로고침(refresh) 때는 건드리지 않아 대회선택 UI가 깜빡이지 않는다.
-  // CompetitionProvider 는 앱 최상단이라 언마운트되지 않으므로 alive 가드는 생략.
-  const load = useCallback(async () => {
-    try {
-      const list = await api.competitions();
-      setCompetitions(list);
-      // [변경: 2026-07-14, 김병현 수정] 시즌(대회) 기본값 = 가장 최근 대회.
-      // list 는 서버가 최신순(연도·시즌번호 내림차순)으로 주므로 list[0] 이 가장 최근 대회다.
-      // 처음 목록을 받은 순간 딱 한 번만 기본 선택으로 잡는다(defaultedRef 가드).
-      if (!defaultedRef.current && list.length > 0) {
-        defaultedRef.current = true;
-        setCompetitionIdState(list[0].id);
-      }
-      setError(null);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // 대회 목록은 앱 시작 때 한 번 불러오고, 업로드 성공 시 refresh()로 다시 부른다.
+  // [변경: 2026-07-15 10:28, 김병현 수정] 기본선택 로직을 load() 안에서 effect 로 이동.
+  // list[0] 이 가장 최근 대회(서버가 최신순 정렬). defaultedRef 로 딱 한 번만.
+  // (이후 목록이 재로드돼도 재실행 안 됨 → 사용자가 고른 '전체'(null) 선택을 되돌리지 않는다.)
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (!defaultedRef.current && competitions.length > 0) {
+      defaultedRef.current = true;
+      setCompetitionIdState(competitions[0].id);
+    }
+  }, [competitions]);
 
   const setCompetitionId = useCallback((id: number | null) => setCompetitionIdState(id), []);
 
@@ -75,17 +65,34 @@ export function CompetitionProvider({ children }: { children: ReactNode }) {
     [competitions, competitionId],
   );
 
+  // [변경: 2026-07-15 10:28, 김병현 수정] refresh = 대회 목록 캐시 무효화(재조회 트리거).
+  // "대회 목록 무효화" 지식은 여기 한 곳에만 둔다 — UploadPage 의 delete 도 이 refresh() 를 재사용.
+  // invalidateQueries 는 Promise 를 반환하므로 UploadPage 의 await 계약을 그대로 만족.
+  const refresh = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: queryKeys.competitions }),
+    [queryClient],
+  );
+
   const value = useMemo<CompetitionContextValue>(
     () => ({
       competitions,
       competitionId,
       competitionLabel,
       setCompetitionId,
-      refresh: load,
-      loading,
-      error,
+      refresh,
+      // [변경: 2026-07-15 10:28, 김병현 수정] loading 은 isLoading(첫 로드만 true) → refresh 때 UI 안 깜빡임.
+      loading: competitionsQuery.isLoading,
+      error: competitionsQuery.error ? competitionsQuery.error.message : null,
     }),
-    [competitions, competitionId, competitionLabel, setCompetitionId, load, loading, error],
+    [
+      competitions,
+      competitionId,
+      competitionLabel,
+      setCompetitionId,
+      refresh,
+      competitionsQuery.isLoading,
+      competitionsQuery.error,
+    ],
   );
 
   return (

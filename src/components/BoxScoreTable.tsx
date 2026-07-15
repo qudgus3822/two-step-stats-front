@@ -16,11 +16,11 @@ export function BoxScoreTable({ players }: { players: PlayerLine[] }) {
           <tr>
             <th className="col-name">선수</th>
             <th>득점</th>
-            <th>리바</th>
-            <th>AS</th>
-            <th>ST</th>
-            <th>BL</th>
-            <th>TO</th>
+            <th>리바운드</th>
+            <th>어시스트</th>
+            <th>스틸</th>
+            <th>블락</th>
+            <th>턴오버</th>
             <th>야투</th>
             <th>3점</th>
             <th>자유투</th>

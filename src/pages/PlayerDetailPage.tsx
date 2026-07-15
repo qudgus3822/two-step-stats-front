@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
-import { api } from '../api/client';
-import { useApi } from '../api/useApi';
+// [변경: 2026-07-15 10:28, 김병현 수정] useApi → React Query usePlayer 로 이관
+import { usePlayer } from '../api/queries';
 import type { GameResult } from '../api/types';
 import { ResultBadge, TeamBadge } from '../components/Badge';
 import { ShootingSplits } from '../components/ShootingSplits';
@@ -17,7 +17,8 @@ const RESULT_TEXT: Record<GameResult, string> = { W: '승', L: '패', D: '무' }
 export function PlayerDetailPage() {
   const { name = '' } = useParams();
   const { tokens } = useTheme();
-  const { data, loading, error, reload } = useApi(() => api.player(name), [name]);
+  // [변경: 2026-07-15 10:28, 김병현 수정] useApi → usePlayer(React Query)
+  const { data, isLoading, error, refetch } = usePlayer(name);
 
   return (
     <div className="page">
@@ -27,9 +28,10 @@ export function PlayerDetailPage() {
         </Link>
       </div>
 
-      {loading && <Loading />}
-      {error && <ErrorView message={error} onRetry={reload} />}
-      {!loading && !error && !data && <Empty>선수를 찾을 수 없어요.</Empty>}
+      {/* [변경: 2026-07-15 10:28, 김병현 수정] loading→isLoading, error→error.message, reload→refetch */}
+      {isLoading && <Loading />}
+      {error && <ErrorView message={error.message} onRetry={() => refetch()} />}
+      {!isLoading && !error && !data && <Empty>선수를 찾을 수 없어요.</Empty>}
 
       {data && (
         <>
@@ -96,9 +98,9 @@ export function PlayerDetailPage() {
                     <th>결과</th>
                     <th>스코어</th>
                     <th>득점</th>
-                    <th>리바</th>
-                    <th>AS</th>
-                    <th>ST</th>
+                    <th>리바운드</th>
+                    <th>어시스트</th>
+                    <th>스틸</th>
                   </tr>
                 </thead>
                 <tbody>

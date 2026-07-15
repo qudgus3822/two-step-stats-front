@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
-import { api } from '../api/client';
-import { useApi } from '../api/useApi';
+// [변경: 2026-07-15 10:28, 김병현 수정] useApi → React Query useGameBox 로 이관
+import { useGameBox } from '../api/queries';
 import { BoxScoreTable } from '../components/BoxScoreTable';
 import { Empty, ErrorView, Loading } from '../components/states';
 import { gameLabel } from '../lib/format';
@@ -12,7 +12,8 @@ import { useTheme } from '../theme/ThemeContext';
 export function GameDetailPage() {
   const { id = '' } = useParams();
   const { tokens } = useTheme();
-  const { data, loading, error, reload } = useApi(() => api.game(id), [id]);
+  // [변경: 2026-07-15 10:28, 김병현 수정] useApi → useGameBox(React Query)
+  const { data, isLoading, error, refetch } = useGameBox(id);
 
   return (
     <div className="page">
@@ -22,9 +23,10 @@ export function GameDetailPage() {
         </Link>
       </div>
 
-      {loading && <Loading />}
-      {error && <ErrorView message={error} onRetry={reload} />}
-      {!loading && !error && !data && <Empty>경기를 찾을 수 없어요.</Empty>}
+      {/* [변경: 2026-07-15 10:28, 김병현 수정] loading→isLoading, error→error.message, reload→refetch */}
+      {isLoading && <Loading />}
+      {error && <ErrorView message={error.message} onRetry={() => refetch()} />}
+      {!isLoading && !error && !data && <Empty>경기를 찾을 수 없어요.</Empty>}
 
       {data && (
         <>

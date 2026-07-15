@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import { api } from '../api/client';
-import { useApi } from '../api/useApi';
+// [변경: 2026-07-15 10:28, 김병현 수정] useApi → React Query useGames 로 이관
+import { useGames } from '../api/queries';
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — useSeason → useCompetition(리네임).
 import { useCompetition } from '../context/CompetitionContext';
 import type { GameSummary } from '../api/types';
@@ -11,10 +11,8 @@ import { gameLabel } from '../lib/format';
 
 export function GamesPage() {
   const { competitionId, competitionLabel } = useCompetition();
-  const { data, loading, error, reload } = useApi(
-    () => api.games(competitionId),
-    [competitionId],
-  );
+  // [변경: 2026-07-15 10:28, 김병현 수정] useApi → useGames(React Query)
+  const { data, isLoading, error, refetch } = useGames(competitionId);
 
   return (
     <div className="page">
@@ -23,8 +21,9 @@ export function GamesPage() {
         <p className="page-sub">{competitionLabel ?? '전체 대회'} · 눌러서 박스스코어 보기</p>
       </div>
 
-      {loading && <Loading />}
-      {error && <ErrorView message={error} onRetry={reload} />}
+      {/* [변경: 2026-07-15 10:28, 김병현 수정] loading→isLoading, error→error.message, reload→refetch */}
+      {isLoading && <Loading />}
+      {error && <ErrorView message={error.message} onRetry={() => refetch()} />}
       {data && data.length === 0 && <Empty>경기 기록이 없어요.</Empty>}
 
       {data && data.length > 0 && (
