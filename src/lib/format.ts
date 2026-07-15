@@ -1,10 +1,13 @@
-import type { LeaderboardMetric } from '../api/types';
+// [변경: 2026-07-15 13:01, 김병현 수정] efficiency 계산에 BoxScore 필요 — import 추가.
+import type { BoxScore, LeaderboardMetric } from '../api/types';
 
 // 화면에 보이는 라벨/포맷 모음. 코드값을 사람이 읽는 한국어로 바꿔준다.
 
 // 리더보드 지표 → 한국어 이름
+// [변경: 2026-07-15 13:01, 김병현 수정] 6키 추가(eff·fgPct·fg2Pct·fg3Pct·ftPct·club180) — 19키 전부 채움.
 export const METRIC_LABELS: Record<LeaderboardMetric, string> = {
   pts: '득점',
+  eff: '효율(EFF)',
   reb: '리바운드',
   oreb: '공격 리바운드',
   dreb: '수비 리바운드',
@@ -17,6 +20,11 @@ export const METRIC_LABELS: Record<LeaderboardMetric, string> = {
   fg3m: '3점 성공',
   ftm: '자유투 성공',
   andOne: '앤드원',
+  fgPct: '야투 성공률',
+  fg2Pct: '2점 성공률',
+  fg3Pct: '3점 성공률',
+  ftPct: '자유투 성공률',
+  club180: '180클럽',
 };
 
 // 스탯 코드(엑셀 원본) → 한국어 이름. 히스토그램을 친절하게 보여주려고.
@@ -51,3 +59,12 @@ export const perGameAvg = (total: number, games: number): number =>
 
 // [변경: 2026-07-15 11:37, 김병현 수정] 평균을 항상 소수1자리로 표시("12"가 아니라 "12.0" → 평균임이 드러남).
 export const formatAvg = (n: number): string => n.toFixed(1);
+
+// [변경: 2026-07-15 13:01, 김병현 수정] EFF 경기당/누적을 선수상세 카드가 프론트에서 파생.
+// 주의: 백엔드 aggregate.ts 의 efficiency 와 식을 반드시 같게 유지(같은 선수 EFF가 화면마다 갈리지 않게).
+export const efficiency = (box: BoxScore): number =>
+  (box.pts + box.reb + box.ast + box.stl + box.blk)
+  - (box.fga - box.fgm) - (box.fta - box.ftm) - box.tov;
+
+// [변경: 2026-07-15 13:01, 김병현 수정] 성공률을 "%" 문자열로. 리더보드 비율 차트/표 표시용.
+export const formatPct = (n: number): string => `${n}%`;

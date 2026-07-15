@@ -8,7 +8,8 @@ import { StatCard } from '../components/StatCard';
 import { TrendLine, type TrendPoint } from '../components/charts/TrendLine';
 import { Empty, ErrorView, Loading } from '../components/states';
 // [변경: 2026-07-15 11:37, 김병현 수정] perGameAvg, formatAvg import 추가 — 요약 카드 경기당 평균 계산·표시용.
-import { gameLabel, perGameAvg, formatAvg } from '../lib/format';
+// [변경: 2026-07-15 13:01, 김병현 수정] efficiency import 추가 — 경기당 효율(EFF) 카드 계산용.
+import { gameLabel, perGameAvg, formatAvg, efficiency } from '../lib/format';
 import { useTheme } from '../theme/ThemeContext';
 
 // 선수 상세: 누적 요약 + 경기별 득점 추이(라인) + 슈팅 성공률 + 경기 로그 표.
@@ -67,6 +68,13 @@ export function PlayerDetailPage() {
               value={formatAvg(perGameAvg(data.totals.ast, data.games.length))}
               hint={`누적 ${data.totals.ast}`}
               accent={tokens.series[4]}
+            />
+            {/* [변경: 2026-07-15 13:01, 김병현 수정] 경기당 효율(EFF) 카드 추가(통산 스코프, 5번째 카드). */}
+            <StatCard
+              label="경기당 효율(통산)"
+              value={formatAvg(perGameAvg(efficiency(data.totals), data.games.length))}
+              hint={`누적 ${efficiency(data.totals)}`}
+              accent={tokens.series[3]}
             />
           </div>
 

@@ -107,8 +107,10 @@ export interface PlayerDetail {
 }
 
 // 리더보드에서 정렬 가능한 지표 (백엔드 LEADERBOARD_METRICS 와 동일)
+// [변경: 2026-07-15 13:01, 김병현 수정] 13종(카운트) → 19종. EFF·성공률 4종·180클럽 추가(백엔드와 같은 순서).
 export const LEADERBOARD_METRICS = [
   'pts',
+  'eff',
   'reb',
   'oreb',
   'dreb',
@@ -121,17 +123,27 @@ export const LEADERBOARD_METRICS = [
   'fg3m',
   'ftm',
   'andOne',
+  'fgPct',
+  'fg2Pct',
+  'fg3Pct',
+  'ftPct',
+  'club180',
 ] as const;
 export type LeaderboardMetric = (typeof LEADERBOARD_METRICS)[number];
 
 // GET /leaderboard
-export interface LeaderboardRow {
+// [변경: 2026-07-15 13:01, 김병현 수정] 카운트 전용 → 3계열(카운트/비율/종합비율) 판별 유니온.
+// 백엔드 aggregate.ts 의 LeaderboardRow/RowBody 미러. value = 정렬키 = 차트가 그리는 수.
+interface LeaderboardRowBase {
   rank: number;
   player: string;
   games: number;
-  total: number;
-  perGame: number;
+  value: number;
 }
+export type LeaderboardRow =
+  | (LeaderboardRowBase & { kind: 'count'; total: number; perGame: number })
+  | (LeaderboardRowBase & { kind: 'rate'; pct: number; makes: number; atts: number })
+  | (LeaderboardRowBase & { kind: 'club180'; sum: number; fgPct: number; fg3Pct: number; ftPct: number });
 
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — 대회를 "진짜 행"(Competition)으로 승격.
 // 원본: api/src/stats/competition.service.ts(CompetitionRow) + stats.controller.ts(upload/competitions)
