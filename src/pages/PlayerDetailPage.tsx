@@ -7,10 +7,12 @@ import { ShootingSplits } from '../components/ShootingSplits';
 import { StatCard } from '../components/StatCard';
 import { TrendLine, type TrendPoint } from '../components/charts/TrendLine';
 import { Empty, ErrorView, Loading } from '../components/states';
-import { gameLabel } from '../lib/format';
+// [변경: 2026-07-15 11:37, 김병현 수정] perGameAvg, formatAvg import 추가 — 요약 카드 경기당 평균 계산·표시용.
+import { gameLabel, perGameAvg, formatAvg } from '../lib/format';
 import { useTheme } from '../theme/ThemeContext';
 
 // 선수 상세: 누적 요약 + 경기별 득점 추이(라인) + 슈팅 성공률 + 경기 로그 표.
+// [변경: 2026-07-15 11:37, 김병현 수정] 요약 카드를 누적 → 경기당 평균(통산, 누적은 hint)으로.
 
 const RESULT_TEXT: Record<GameResult, string> = { W: '승', L: '패', D: '무' };
 
@@ -45,11 +47,27 @@ export function PlayerDetailPage() {
           </div>
 
           {/* 누적 요약 카드 */}
+          {/* [변경: 2026-07-15 11:37, 김병현 수정] value=경기당 평균(통산), hint=누적. 라벨에 (통산) — 상세는 통산 스코프. */}
           <div className="stat-grid">
             <StatCard label="출전" value={data.games.length} accent={tokens.series[0]} />
-            <StatCard label="누적 득점" value={data.totals.pts} accent={tokens.series[7]} />
-            <StatCard label="리바운드" value={data.totals.reb} accent={tokens.series[1]} />
-            <StatCard label="어시스트" value={data.totals.ast} accent={tokens.series[4]} />
+            <StatCard
+              label="경기당 득점(통산)"
+              value={formatAvg(perGameAvg(data.totals.pts, data.games.length))}
+              hint={`누적 ${data.totals.pts}`}
+              accent={tokens.series[7]}
+            />
+            <StatCard
+              label="경기당 리바운드(통산)"
+              value={formatAvg(perGameAvg(data.totals.reb, data.games.length))}
+              hint={`누적 ${data.totals.reb}`}
+              accent={tokens.series[1]}
+            />
+            <StatCard
+              label="경기당 어시스트(통산)"
+              value={formatAvg(perGameAvg(data.totals.ast, data.games.length))}
+              hint={`누적 ${data.totals.ast}`}
+              accent={tokens.series[4]}
+            />
           </div>
 
           <div className="grid-2">

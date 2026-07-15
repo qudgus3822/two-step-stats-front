@@ -7,9 +7,11 @@ import { useCompetition } from '../context/CompetitionContext';
 import { LEADERBOARD_METRICS, type LeaderboardMetric } from '../api/types';
 import { BarRanking, type BarDatum } from '../components/charts/BarRanking';
 import { Empty, ErrorView, Loading } from '../components/states';
-import { METRIC_LABELS } from '../lib/format';
+// [변경: 2026-07-15 11:37, 김병현 수정] formatAvg import 추가 — 차트/표의 경기당 평균 표시용.
+import { METRIC_LABELS, formatAvg } from '../lib/format';
 
 // 리더보드: 지표를 골라 누적 순위를 막대 + 표로. 차트는 눈으로, 표는 정확한 값/평균으로.
+// [변경: 2026-07-15 11:37, 김병현 수정] 메인 지표를 누적 → 경기당 평균으로. 정렬·차트·강조 모두 경기당 기준.
 
 // [변경: 2026-07-14 17:49, 김병현 수정] 표는 전체 순위, 막대 차트만 상위 12명으로 제한.
 const CHART_TOP_N = 12;
@@ -27,7 +29,8 @@ export function LeaderboardPage() {
         <h1 className="page-title">리더보드</h1>
         <p className="page-sub">
           {/* [변경: 2026-07-14 17:49, 김병현 수정] "상위 N" → 전체 인원 수 표기. */}
-          {competitionLabel ?? '전체 대회'} · 누적 {METRIC_LABELS[metric]} 순위 (전체{' '}
+          {/* [변경: 2026-07-15 11:37, 김병현 수정] "누적" → "경기당" 순위로 문구 변경. */}
+          {competitionLabel ?? '전체 대회'} · 경기당 {METRIC_LABELS[metric]} 순위 (전체{' '}
           {data ? `${data.length}명` : ''})
         </p>
       </div>
@@ -57,20 +60,23 @@ export function LeaderboardPage() {
         <div className="grid-2">
           <section className="card chart-card">
             <div className="card-head">
-              <h2 className="card-title">{METRIC_LABELS[metric]} 상위</h2>
+              {/* [변경: 2026-07-15 11:37, 김병현 수정] 차트가 경기당 평균 기준임을 제목에 명시. */}
+              <h2 className="card-title">{METRIC_LABELS[metric]} 경기당 상위</h2>
             </div>
             <BarRanking
               data={data.slice(0, CHART_TOP_N).map<BarDatum>((row) => ({
                 label: row.player,
-                value: row.total,
+                value: row.perGame, // [변경: 2026-07-15 11:37, 김병현 수정] 누적 → 경기당 평균
               }))}
+              format={formatAvg} // [변경: 2026-07-15 11:37, 김병현 수정] 막대 라벨/툴팁 소수1자리
             />
           </section>
 
           <section className="card">
             <div className="card-head">
               <h2 className="card-title">전체 순위</h2>
-              <span className="card-note">누적 · 경기당 평균</span>
+              {/* [변경: 2026-07-15 11:37, 김병현 수정] "누적 · 경기당 평균" → "경기당 평균 · 누적"(경기당이 메인). */}
+              <span className="card-note">경기당 평균 · 누적</span>
             </div>
             <div className="table-wrap">
               <table className="table">
@@ -79,8 +85,9 @@ export function LeaderboardPage() {
                     <th className="col-rank">#</th>
                     <th className="col-name">선수</th>
                     <th>출전</th>
-                    <th>누적</th>
+                    {/* [변경: 2026-07-15 11:37, 김병현 수정] 표 컬럼 순서를 경기당 → 누적으로 교체. */}
                     <th>경기당</th>
+                    <th>누적</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -93,8 +100,9 @@ export function LeaderboardPage() {
                         </Link>
                       </td>
                       <td className="num">{row.games}</td>
-                      <td className="num strong">{row.total}</td>
-                      <td className="num muted">{row.perGame}</td>
+                      {/* [변경: 2026-07-15 11:37, 김병현 수정] 경기당(strong)·누적(muted) 순서·강조 교체. */}
+                      <td className="num strong">{formatAvg(row.perGame)}</td>
+                      <td className="num muted">{row.total}</td>
                     </tr>
                   ))}
                 </tbody>

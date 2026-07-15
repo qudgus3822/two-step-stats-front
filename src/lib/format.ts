@@ -42,3 +42,12 @@ export const statCodeLabel = (code: string): string => STAT_CODE_LABELS[code] ??
 
 // "3주 2경기" 같은 경기 라벨
 export const gameLabel = (week: number, game: number): string => `${week}주 ${game}경기`;
+
+// [변경: 2026-07-15 11:37, 김병현 수정] 경기당 평균(소수1자리) 계산 — 선수상세 카드가 프론트에서 직접 파생.
+// 주의: 백엔드 aggregate.ts 의 perGameAvg 와 반올림 표현식을 반드시 같게 유지할 것(리더보드/상세 값이 갈리지 않게).
+// (선언형은 달라도 됨: 여기 const 화살표 vs 백엔드 function. 같아야 하는 건 반올림 표현식.)
+export const perGameAvg = (total: number, games: number): number =>
+  games > 0 ? Math.round((total / games) * 10) / 10 : 0;
+
+// [변경: 2026-07-15 11:37, 김병현 수정] 평균을 항상 소수1자리로 표시("12"가 아니라 "12.0" → 평균임이 드러남).
+export const formatAvg = (n: number): string => n.toFixed(1);

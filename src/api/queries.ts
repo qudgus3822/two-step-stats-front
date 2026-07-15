@@ -97,6 +97,7 @@ export function usePlayer(name: string): UseQueryResult<PlayerDetail> {
 }
 
 // 리더보드(지표별 누적 순위). limit 는 생략 → 전체.
+// [변경: 2026-07-15 11:37, 김병현 수정] 정렬 기준이 누적 → 경기당 평균으로 바뀜(백엔드 leaderboard 정렬 변경). 이 훅의 시그니처/로직은 그대로.
 export function useLeaderboard(
   metric: LeaderboardMetric,
   competitionId: number | null,

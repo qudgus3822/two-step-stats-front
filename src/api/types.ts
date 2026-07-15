@@ -81,6 +81,8 @@ export interface PlayerListItem {
   teams: string[];
   games: number;
   pts: number;
+  // [변경: 2026-07-15 11:37, 김병현 수정] 경기당 득점(백엔드 listPlayers.ppg 미러).
+  ppg: number;
 }
 
 export type GameResult = 'W' | 'L' | 'D';

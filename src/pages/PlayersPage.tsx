@@ -5,8 +5,11 @@ import { usePlayers } from '../api/queries';
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — useSeason → useCompetition(리네임).
 import { useCompetition } from '../context/CompetitionContext';
 import { Empty, ErrorView, Loading } from '../components/states';
+// [변경: 2026-07-15 11:37, 김병현 수정] formatAvg import 추가 — 경기당 득점 표시용.
+import { formatAvg } from '../lib/format';
 
 // 선수 목록: 득점 많은 순 표. 이름으로 즉석 검색(클라이언트 필터)도 된다.
+// [변경: 2026-07-15 11:37, 김병현 수정] 메인 지표를 누적 득점 → 경기당 득점으로.
 
 export function PlayersPage() {
   const { competitionId, competitionLabel } = useCompetition();
@@ -26,7 +29,8 @@ export function PlayersPage() {
     <div className="page">
       <div className="page-head">
         <h1 className="page-title">선수</h1>
-        <p className="page-sub">{competitionLabel ?? '전체 대회'} · 득점순</p>
+        {/* [변경: 2026-07-15 11:37, 김병현 수정] "득점순" → "경기당 득점순"으로 문구 변경. */}
+        <p className="page-sub">{competitionLabel ?? '전체 대회'} · 경기당 득점순</p>
       </div>
 
       {/* [변경: 2026-07-15 10:28, 김병현 수정] loading→isLoading, error→error.message, reload→refetch */}
@@ -53,7 +57,9 @@ export function PlayersPage() {
                   <th className="col-name">선수</th>
                   <th>팀</th>
                   <th>출전</th>
-                  <th>누적 득점</th>
+                  {/* [변경: 2026-07-15 11:37, 김병현 수정] "경기당" strong 컬럼 추가, 기존 "누적 득점"은 muted 보조로. */}
+                  <th>경기당</th>
+                  <th>누적</th>
                 </tr>
               </thead>
               <tbody>
@@ -67,7 +73,9 @@ export function PlayersPage() {
                     </td>
                     <td className="muted">{p.teams.join(', ')}</td>
                     <td className="num">{p.games}</td>
-                    <td className="num strong">{p.pts}</td>
+                    {/* [변경: 2026-07-15 11:37, 김병현 수정] 경기당(strong) 추가, 누적(muted)으로 강등. */}
+                    <td className="num strong">{formatAvg(p.ppg)}</td>
+                    <td className="num muted">{p.pts}</td>
                   </tr>
                 ))}
               </tbody>
