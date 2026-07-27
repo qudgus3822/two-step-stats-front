@@ -58,6 +58,10 @@ export function Layout() {
           <NavLink to="/leaderboard" className={navClass}>
             리더보드
           </NavLink>
+          {/* [변경: 2026-07-27 16:14, 김병현 수정] 시너지(동료별 WOWY) 탭 추가. "리더보드" 다음. */}
+          <NavLink to="/synergy" className={navClass}>
+            시너지
+          </NavLink>
         </nav>
 
         <div className="topbar-controls">

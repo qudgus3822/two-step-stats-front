@@ -68,3 +68,14 @@ export const efficiency = (box: BoxScore): number =>
 
 // [변경: 2026-07-15 13:01, 김병현 수정] 성공률을 "%" 문자열로. 리더보드 비율 차트/표 표시용.
 export const formatPct = (n: number): string => `${n}%`;
+
+// [변경: 2026-07-27 16:14, 김병현 수정] 시너지 델타 표시 — 부호를 붙여 방향이 바로 보이게. 0은 "0.0".
+export const formatDelta = (n: number): string => `${n > 0 ? '+' : ''}${n.toFixed(1)}`;
+
+// [변경: 2026-07-27 16:14, 김병현 수정] 델타를 '좋아짐/나빠짐/그대로'로 번역한다.
+// 방향(betterWhen)은 서버 응답에서 받는다 — 턴오버처럼 낮을수록 좋은 지표를 프론트가 기억하지 않게.
+export type DeltaTone = 'good' | 'bad' | 'flat';
+export const deltaTone = (delta: number, betterWhen: 'higher' | 'lower'): DeltaTone => {
+  if (delta === 0) return 'flat';
+  return (betterWhen === 'higher' ? delta > 0 : delta < 0) ? 'good' : 'bad';
+};

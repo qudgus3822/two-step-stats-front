@@ -9,6 +9,9 @@ import type {
   PlayerDetail,
   PlayerListItem,
   Summary,
+  // [변경: 2026-07-27 16:14, 김병현 수정] 시너지 훅용 타입 추가.
+  SynergyMetric,
+  SynergyReport,
 } from './types';
 
 // 리소스별 데이터 훅을 한 곳에 모은 모듈.
@@ -46,6 +49,12 @@ export const queryKeys = {
     all: ['leaderboard'] as const,
     by: (metric: LeaderboardMetric, competitionId: number | null) =>
       ['leaderboard', metric, competitionId] as const,
+  },
+  // [변경: 2026-07-27 16:14, 김병현 수정] 시너지 리포트 키. player/metric/competitionId 셋 다 바뀌면 새 키.
+  synergy: {
+    all: ['synergy'] as const,
+    by: (player: string | null, metric: SynergyMetric, competitionId: number | null) =>
+      ['synergy', player, metric, competitionId] as const,
   },
 };
 
@@ -115,6 +124,24 @@ export function useLeaderboard(
   });
 }
 
+// [변경: 2026-07-27 16:14, 김병현 수정] 시너지 리포트 훅. 기준 선수가 없으면 아예 안 부른다.
+export function useSynergy(
+  player: string | null,
+  metric: SynergyMetric,
+  competitionId: number | null,
+): UseQueryResult<SynergyReport> {
+  return useQuery({
+    queryKey: queryKeys.synergy.by(player, metric, competitionId),
+    // enabled 가 false 면 실행 자체를 안 하므로, 실행 시점의 player 는 항상 non-null 이다.
+    queryFn: () => api.synergy(player as string, metric, competitionId),
+    enabled: !!player,
+    // 지표 탭을 바꾸면(그리고 기준 선수·대회를 바꿔도) 키가 달라져 새로 받는다. 그동안 이전 표를
+    // 그대로 띄워 둬서 표·상세 패널이 사라졌다 돌아오는 깜빡임을 막는다(결정 9).
+    // RQ v5 문법 — v4 의 keepPreviousData 를 대체한다.
+    placeholderData: (prev) => prev,
+  });
+}
+
 // 업로드 후 낡는 캐시를 한 번에 정리한다(업로드 fan-out).
 // 업로드는 새 대회를 만들 수도 있어 competitions 까지 포함해 광범위하게 무효화한다.
 // append 업로드는 competitionId 가 그대로라 세부 키가 안 바뀌지만 데이터는 갈린다 →
@@ -130,5 +157,7 @@ export async function invalidateAfterUpload(queryClient: QueryClient): Promise<v
     // [변경: 2026-07-27 15:20, 김병현 수정] 선수 상세도 업로드로 낡는다(빠져 있던 것 보완).
     queryClient.invalidateQueries({ queryKey: queryKeys.player.all }),
     queryClient.invalidateQueries({ queryKey: queryKeys.leaderboard.all }),
+    // [변경: 2026-07-27 16:14, 김병현 수정] 시너지도 업로드로 낡는다(동료 목록·평균이 바뀔 수 있어서).
+    queryClient.invalidateQueries({ queryKey: queryKeys.synergy.all }),
   ]);
 }

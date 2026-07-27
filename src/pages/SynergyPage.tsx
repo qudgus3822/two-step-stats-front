@@ -1,0 +1,260 @@
+// [신설: 2026-07-27 16:14, 김병현 작성] 시너지 탭 — "기준 선수 + 동료 한 명"을 고르면
+// 같이 뛸 때 스탯이 얼마나 좋아지는지(WOWY: with-or-without-you) 보여주는 화면.
+//
+// 요청은 1번(useSynergy 하나)이다 — 서버가 동료 전원의 지표 7종을 한 번에 계산해 주고,
+// 지표 탭은 이미 받은 데이터 안에서 정렬만 바뀐다. 선택 상태(기준 선수/펼친 동료)는
+// GameStatsPanel 관례처럼 useEffect 없이 파생 계산으로만 처리한다.
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { usePlayers, useSynergy } from '../api/queries';
+import { useCompetition } from '../context/CompetitionContext';
+import { SYNERGY_METRICS, type SynergyMetric, type SynergyReport, type SynergyRow } from '../api/types';
+import { StatCard } from '../components/StatCard';
+import { Empty, ErrorView, Loading } from '../components/states';
+import { METRIC_LABELS, deltaTone, formatAvg, formatDelta } from '../lib/format';
+import { useTheme } from '../theme/ThemeContext';
+
+export function SynergyPage() {
+  const { competitionId, competitionLabel } = useCompetition();
+  const playersQuery = usePlayers(competitionId);
+  const players = playersQuery.data ?? [];
+
+  const [pickedPlayer, setPickedPlayer] = useState<string | null>(null);
+  const [metric, setMetric] = useState<SynergyMetric>('eff');
+  const [pickedTeammate, setPickedTeammate] = useState<string | null>(null);
+
+  // 기준 선수: 고른 게 지금 목록에 있으면 그걸, 아니면 목록 첫 번째(= 경기당 득점 1위).
+  // 대회를 바꾸면 목록이 갈리므로 자동으로 첫 번째로 되돌아간다(별도 effect 불필요).
+  const basePlayer =
+    pickedPlayer && players.some((p) => p.player === pickedPlayer)
+      ? pickedPlayer
+      : (players[0]?.player ?? null);
+
+  // 이름을 synergy* 로 구분한다. 선수 목록 쿼리(playersQuery)와 재시도 대상이 섞이면
+  // "다시 시도" 버튼이 엉뚱한 쿼리를 부르게 된다.
+  const {
+    data,
+    isLoading: synergyLoading,
+    isFetching: synergyFetching,
+    error: synergyError,
+    refetch: synergyRefetch,
+  } = useSynergy(basePlayer, metric, competitionId);
+  const rows = data?.rows ?? [];
+  // 펼친 동료도 같은 방식(파생 계산)으로 검증한다. 지금 rows 에 없으면 상세를 안 그린다.
+  // 지표 탭을 바꿔도 rows 가 (placeholderData 덕분에) 한 순간도 비지 않아 상세가 안 사라진다.
+  // 기준 선수·대회를 바꿔 rows 자체가 갈리면, 새 rows 에 없는 동료의 상세는 자동으로 닫힌다.
+  const detail: SynergyRow | null = pickedTeammate
+    ? (rows.find((r) => r.teammate === pickedTeammate) ?? null)
+    : null;
+
+  // 지표/선수/대회 전환 중 잠깐 옛 표를 그대로 띄워 두는 구간(결정 9). 첫 로딩은 제외.
+  const stale = synergyFetching && !synergyLoading;
+
+  return (
+    <div className="page">
+      <div className="page-head">
+        <h1 className="page-title">시너지</h1>
+        <p className="page-sub">{competitionLabel ?? '전체 대회'} · 같은 팀으로 함께 뛴 경기 기준</p>
+      </div>
+
+      {playersQuery.isLoading && <Loading />}
+      {playersQuery.error && (
+        <ErrorView message={playersQuery.error.message} onRetry={() => playersQuery.refetch()} />
+      )}
+      {playersQuery.data && playersQuery.data.length === 0 && (
+        <Empty>이 대회엔 선수 기록이 없어요.</Empty>
+      )}
+
+      {basePlayer && (
+        <>
+          <div className="synergy-controls">
+            <label className="synergy-pick">
+              <span className="synergy-pick-caption">기준 선수</span>
+              <select
+                className="select"
+                value={basePlayer}
+                onChange={(e) => setPickedPlayer(e.target.value)}
+                aria-label="기준 선수 선택"
+              >
+                {players.map((p) => (
+                  <option key={p.player} value={p.player}>
+                    {p.player} ({p.games}경기)
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="metric-tabs" role="tablist" aria-label="시너지 지표">
+            {SYNERGY_METRICS.map((m) => (
+              <button
+                key={m}
+                type="button"
+                role="tab"
+                aria-selected={m === metric}
+                className={`metric-tab ${m === metric ? 'is-active' : ''}`}
+                onClick={() => setMetric(m)}
+              >
+                {METRIC_LABELS[m]}
+              </button>
+            ))}
+          </div>
+
+          {synergyLoading && <Loading />}
+          {synergyError && (
+            <ErrorView message={synergyError.message} onRetry={() => synergyRefetch()} />
+          )}
+          {/* [변경: 2026-07-27 15:40, 김병현 수정] 이름 뒤에 "선수"를 끼운다.
+              이름이 모음으로 끝나면("이준") "이준 의"가 어색해지는데, 받침을 판정하려면
+              숫자로 끝나는 이름("김진우1")까지 규칙이 늘어난다. "선수" 한 글자면 항상 맞다. */}
+          {data && data.games === 0 && <Empty>{basePlayer} 선수의 기록이 이 대회엔 없어요.</Empty>}
+          {data && data.games > 0 && rows.length === 0 && (
+            <Empty>같은 팀으로 함께 뛴 동료가 없어요.</Empty>
+          )}
+
+          {data && rows.length > 0 && (
+            <div className={stale ? 'is-stale' : ''} aria-busy={stale}>
+              <SynergyTable report={data} metric={metric} picked={pickedTeammate} onPick={setPickedTeammate} />
+              {detail && <SynergyDetail report={data} detail={detail} />}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// 동료 순위표. 자격 미달 행은 흐리게 남기고(지우지 않음), 자격자가 항상 위(서버 정렬 그대로 표시).
+function SynergyTable({
+  report,
+  metric,
+  picked,
+  onPick,
+}: {
+  report: SynergyReport;
+  metric: SynergyMetric;
+  picked: string | null;
+  onPick: (teammate: string | null) => void;
+}) {
+  return (
+    <section className="card">
+      <div className="card-head">
+        <h2 className="card-title">
+          {/* [변경: 2026-07-27 15:40, 김병현 수정] "과/와" 받침 판정을 피하려고 "선수와"로 적는다.
+              이름이 모음으로 끝나면("이준 과") 틀린 한국어가 되는데, 이건 이 화면의 대표 제목이라
+              제일 먼저 눈에 띈다. */}
+          {report.player} 선수와 같이 뛰었을 때 — {METRIC_LABELS[metric]}
+        </h2>
+        <span className="card-note">
+          평소(전체 {report.games}경기) 경기당 {formatAvg(report.overall[metric])} · 함께{' '}
+          {report.minTogetherGames}경기 이상만 순위
+        </span>
+      </div>
+      <div className="table-wrap">
+        <table className="table">
+          <thead>
+            <tr>
+              <th className="col-rank">#</th>
+              <th className="col-name">동료</th>
+              <th>함께</th>
+              <th>따로</th>
+              <th>함께 평균</th>
+              <th>따로 평균</th>
+              <th>차이</th>
+            </tr>
+          </thead>
+          <tbody>
+            {report.rows.map((row) => {
+              const s = row.metrics[metric];
+              const isPicked = picked === row.teammate;
+              const tone = s.delta == null ? 'flat' : deltaTone(s.delta, report.betterWhen[metric]);
+              return (
+                <tr
+                  key={row.teammate}
+                  className={`${row.qualified ? '' : 'row-muted'} ${isPicked ? 'row-picked' : ''}`}
+                >
+                  <td className="num muted">{row.rank ?? '—'}</td>
+                  <td className="col-name">
+                    {/* 상세를 여닫는 disclosure 버튼. aria-pressed 가 아니라 aria-expanded 다 —
+                        같은 이름을 다시 누르면 접혀야 스크린리더 사용자에게 거짓말이 안 된다.
+                        aria-controls 는 패널이 실제로 그려질 때만 건다(없는 id 를 가리키면 안 되니까). */}
+                    <button
+                      type="button"
+                      className="link-btn"
+                      aria-expanded={isPicked}
+                      aria-controls={isPicked ? 'synergy-detail' : undefined}
+                      onClick={() => onPick(isPicked ? null : row.teammate)}
+                    >
+                      {row.teammate}
+                    </button>
+                    {!row.qualified && <span className="badge badge--team">표본 부족</span>}
+                  </td>
+                  <td className="num">{row.togetherGames}</td>
+                  <td className="num muted">{row.apartGames}</td>
+                  <td className="num">{formatAvg(s.together)}</td>
+                  <td className="num muted">{s.apart == null ? '—' : formatAvg(s.apart)}</td>
+                  <td className={`num strong delta-${tone}`}>
+                    {s.delta == null ? '—' : formatDelta(s.delta)}
+                    {/* 색만으로 좋고 나쁨을 알리지 않는다(WCAG 1.4.1) — CompareTable.tsx 의 .sr-only 관례를 그대로 따른다. */}
+                    {tone !== 'flat' && (
+                      <span className="sr-only">{tone === 'good' ? ' 좋아짐' : ' 나빠짐'}</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="synergy-note">
+        같이 뛴 경기가 적으면 우연일 수 있어요. 기록이 하나도 없는 경기는 출전으로 안 잡히고, 같은
+        경기라도 상대팀이었던 경기는 "따로"로 셉니다. 선수는 이름으로만 구분해서 이름이 같은
+        사람은 한 사람으로 합쳐집니다.
+      </p>
+    </section>
+  );
+}
+
+// 동료 한 명의 상세 — 지표 7개를 StatCard 로. 이름 붙은 region 이라 스크린리더가 건너뛸 수 있다.
+// 포커스는 옮기지 않는다(effect+ref 가 필요한데, 이 페이지는 effect 0개 원칙을 지킨다).
+function SynergyDetail({ report, detail }: { report: SynergyReport; detail: SynergyRow }) {
+  const { tokens } = useTheme();
+  return (
+    <section
+      id="synergy-detail"
+      role="region"
+      aria-label={`${report.player} + ${detail.teammate} 상세`}
+      className="card"
+    >
+      <div className="card-head">
+        <h2 className="card-title">
+          {report.player} + {detail.teammate}
+        </h2>
+        <span className="card-note">
+          함께 {detail.togetherGames}경기 · 따로 {detail.apartGames}경기 ·{' '}
+          <Link className="link" to={`/players/${encodeURIComponent(detail.teammate)}`}>
+            {detail.teammate} 상세 →
+          </Link>
+        </span>
+      </div>
+      <div className="stat-grid">
+        {SYNERGY_METRICS.map((m) => {
+          const s = detail.metrics[m];
+          const tone = s.delta == null ? 'flat' : deltaTone(s.delta, report.betterWhen[m]);
+          // 색(accent)만으로는 방향이 안 읽히므로 label 에 좋아짐/나빠짐을 글자로 넣는다.
+          // StatCard 를 안 고치고 접근성을 챙기는 방법(StatCard.value 는 string|number 라 마크업 불가).
+          const toneSuffix = tone === 'flat' ? '' : tone === 'good' ? ' (좋아짐)' : ' (나빠짐)';
+          return (
+            <StatCard
+              key={m}
+              label={`경기당 ${METRIC_LABELS[m]}${toneSuffix}`}
+              value={s.delta == null ? '—' : formatDelta(s.delta)}
+              hint={`같이 ${formatAvg(s.together)} · 따로 ${s.apart == null ? '—' : formatAvg(s.apart)} · 평소 ${formatAvg(report.overall[m])}`}
+              accent={tone === 'good' ? tokens.good : tone === 'bad' ? tokens.critical : tokens.baseline}
+            />
+          );
+        })}
+      </div>
+    </section>
+  );
+}

@@ -1124,3 +1124,72 @@ h3 {
     padding-left: 0;
   }
 }
+
+/* ── 시너지 화면 ─────────────────────────────────────────────── */
+/* [신설: 2026-07-27 16:14, 김병현 작성] 시너지 탭 스타일. 새 색 변수는 안 만들고 기존 토큰만 쓴다. */
+
+.synergy-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.synergy-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+}
+.synergy-pick-caption {
+  color: var(--muted);
+}
+.synergy-pick .select {
+  max-width: 260px;
+}
+.synergy-note {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+/* 표 안에서 링크처럼 보이는 버튼(키보드 접근 가능한 '펼치기' 액션) */
+.link-btn {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--series-1);
+  font-weight: 550;
+  cursor: pointer;
+}
+.link-btn:hover {
+  text-decoration: underline;
+}
+.link-btn[aria-expanded='true'] {
+  text-decoration: underline;
+}
+
+/* 지표·기준 선수·대회를 바꿔 새 데이터를 받는 동안(결정 9). 이전 표를 지우지 않고 흐리게만 한다. */
+.is-stale {
+  opacity: 0.55;
+  transition: opacity 120ms ease;
+}
+
+.row-muted td {
+  opacity: 0.62;
+} /* 표본 부족 행 */
+.row-picked {
+  background: color-mix(in srgb, var(--series-1) 10%, transparent);
+}
+
+.delta-good {
+  color: var(--good);
+}
+.delta-bad {
+  color: var(--loss);
+}
+.delta-flat {
+  color: var(--muted);
+}

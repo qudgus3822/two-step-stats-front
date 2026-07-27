@@ -191,3 +191,39 @@ export interface UploadConflictBody {
   games: GameConflict[];
   message: string;
 }
+
+// [변경: 2026-07-27 16:14, 김병현 수정] 시너지 탭 — 백엔드 stats/synergy.ts 미러.
+// 순서·이름을 백엔드와 똑같이 유지할 것(응답을 그대로 받아 쓰는 계약).
+// ⚠ 백엔드와 똑같이 **한 줄**로. 줄바꿈하면 ASI 때문에 TS1434(컴파일 실패).
+export const SYNERGY_METRICS = ['eff', 'pts', 'reb', 'ast', 'stl', 'blk', 'tov'] as const satisfies readonly LeaderboardMetric[];
+export type SynergyMetric = (typeof SYNERGY_METRICS)[number];
+
+// 동료 한 명 × 지표 하나의 함께/따로/차이. apart·delta 는 따로 뛴 경기가 0이면 null.
+export interface SynergySplit {
+  together: number;
+  apart: number | null;
+  delta: number | null;
+}
+
+// GET /synergy 의 표 한 줄 — 동료 한 명의 자격·경기 수·지표 7종 스플릿.
+export interface SynergyRow {
+  rank: number | null; // 자격 행에만 1,2,3… / 미자격은 null
+  teammate: string;
+  togetherGames: number;
+  apartGames: number;
+  qualified: boolean;
+  value: number | null; // = metrics[metric].delta (정렬에 쓴 값)
+  metrics: Record<SynergyMetric, SynergySplit>;
+}
+
+// GET /synergy?player=&metric=&competitionId= 응답. 기록 없는 이름도 200(빈 리포트)이다.
+export interface SynergyReport {
+  player: string;
+  games: number;
+  metric: SynergyMetric;
+  betterWhen: Record<SynergyMetric, 'higher' | 'lower'>; // 지표별 방향 — 프론트가 'tov' 를 하드코딩 안 하게
+  minTogetherGames: number;
+  minApartGames: number;
+  overall: Record<SynergyMetric, number>; // 동료와 무관한 "평소" 경기당 평균
+  rows: SynergyRow[];
+}

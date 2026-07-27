@@ -8,6 +8,9 @@ import type {
   PlayerDetail,
   PlayerListItem,
   Summary,
+  // [변경: 2026-07-27 16:14, 김병현 수정] 시너지 리포트 타입 추가.
+  SynergyMetric,
+  SynergyReport,
   UploadConflictBody,
   UploadResult,
 } from './types';
@@ -200,6 +203,14 @@ export const api = {
     c: { year: number; seasonNo: number | null; name: string },
     opts?: { mode?: 'replace' | 'append'; force?: boolean },
   ) => uploadWorkbook(file, c, { mode: opts?.mode ?? 'replace', force: opts?.force ?? false }),
+
+  // [변경: 2026-07-27 16:14, 김병현 수정] 시너지 리포트 조회. 이름은 URLSearchParams 가 알아서 인코딩한다.
+  // 기록이 없는 선수도 200(빈 리포트)이라 404 흡수 로직이 필요 없다(선수 상세 api.player 와 다른 점).
+  synergy: (player: string, metric: SynergyMetric, competitionId?: number | null) => {
+    const q = new URLSearchParams({ player, metric });
+    if (competitionId != null) q.set('competitionId', String(competitionId));
+    return request<SynergyReport>(`/synergy?${q.toString()}`);
+  },
 
   // 대회 등록부: 등록된 대회 목록 (등록은 upload 가 자동으로 upsert 해서 별도 호출 없음) / 등록 해제
   competitions: () => request<Competition[]>('/competitions'),
