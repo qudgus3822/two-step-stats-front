@@ -29,7 +29,8 @@ export class UploadConflictError extends Error {
 }
 
 // API 주소: 환경변수 우선, 없으면 로컬 3000. 끝의 슬래시는 떼서 이중 슬래시 방지.
-const BASE = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000').replace(
+// [변경: 2026-07-27 11:02, 김병현 수정] 백엔드가 setGlobalPrefix('api')로 바뀌어 기본값에 /api 추가. VITE_API_BASE_URL 을 쓸 때도 /api 까지 포함해야 함.
+const BASE = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api').replace(
   /\/$/,
   '',
 );
