@@ -122,10 +122,10 @@ function buildSubtitle(
 ): string {
   if (competitionId == null) {
     return scopeError
-      ? '대회 목록을 못 불러왔어요 · 전체 대회 기준 · 두 선수를 나란히'
-      : '전체 대회 · 두 선수를 나란히';
+      ? '대회 목록을 못 불러왔어요 · 전체 대회 기준'
+      : '전체 대회';
   }
-  return `${competitionLabel ?? '대회 확인 중'} · 두 선수를 나란히`;
+  return `${competitionLabel ?? '대회 확인 중'}`;
 }
 
 // 선수 둘 다 고르기 전(AC 68 앞 3가지)의 안내 문구.
