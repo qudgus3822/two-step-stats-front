@@ -9,7 +9,10 @@ import { TrendLine, type TrendPoint } from '../components/charts/TrendLine';
 import { Empty, ErrorView, Loading } from '../components/states';
 // [변경: 2026-07-15 11:37, 김병현 수정] perGameAvg, formatAvg import 추가 — 요약 카드 경기당 평균 계산·표시용.
 // [변경: 2026-07-15 13:01, 김병현 수정] efficiency import 추가 — 경기당 효율(EFF) 카드 계산용.
-import { gameLabel, perGameAvg, formatAvg, efficiency } from '../lib/format';
+// [변경: 2026-07-27 16:10, 김병현 수정] 경기당 평균/EFF 계산을 summarizePlayer 로 옮겨서
+// perGameAvg·efficiency 는 더 이상 이 파일에서 안 쓴다(formatAvg 는 여전히 표시용으로 씀).
+import { gameLabel, formatAvg } from '../lib/format';
+import { summarizePlayer } from '../lib/playerSummary';
 import { useTheme } from '../theme/ThemeContext';
 
 // 선수 상세: 누적 요약 + 경기별 득점 추이(라인) + 슈팅 성공률 + 경기 로그 표.
@@ -21,7 +24,11 @@ export function PlayerDetailPage() {
   const { name = '' } = useParams();
   const { tokens } = useTheme();
   // [변경: 2026-07-15 10:28, 김병현 수정] useApi → usePlayer(React Query)
-  const { data, isLoading, error, refetch } = usePlayer(name);
+  // [변경: 2026-07-27 15:20, 김병현 수정] usePlayer 가 competitionId 를 받게 됨 — 이 화면은 통산 고정이라 null.
+  const { data, isLoading, error, refetch } = usePlayer(name, null);
+  // [변경: 2026-07-27 16:10, 김병현 수정] 요약 카드 계산을 summarizePlayer 로 위임 —
+  // 분모·반올림·EFF 공식을 비교 화면과 여기서 같은 곳(lib/playerSummary.ts)에서 가져온다.
+  const summary = data ? summarizePlayer(data) : null;
 
   return (
     <div className="page">
@@ -36,7 +43,7 @@ export function PlayerDetailPage() {
       {error && <ErrorView message={error.message} onRetry={() => refetch()} />}
       {!isLoading && !error && !data && <Empty>선수를 찾을 수 없어요.</Empty>}
 
-      {data && (
+      {data && summary && (
         <>
           <div className="page-head">
             <h1 className="page-title">{data.player}</h1>
@@ -50,30 +57,30 @@ export function PlayerDetailPage() {
           {/* 누적 요약 카드 */}
           {/* [변경: 2026-07-15 11:37, 김병현 수정] value=경기당 평균(통산), hint=누적. 라벨에 (통산) — 상세는 통산 스코프. */}
           <div className="stat-grid">
-            <StatCard label="출전" value={data.games.length} accent={tokens.series[0]} />
+            <StatCard label="출전" value={summary.games} accent={tokens.series[0]} />
             <StatCard
               label="경기당 득점(통산)"
-              value={formatAvg(perGameAvg(data.totals.pts, data.games.length))}
-              hint={`누적 ${data.totals.pts}`}
+              value={formatAvg(summary.perGame.pts)}
+              hint={`누적 ${summary.totals.pts}`}
               accent={tokens.series[7]}
             />
             <StatCard
               label="경기당 리바운드(통산)"
-              value={formatAvg(perGameAvg(data.totals.reb, data.games.length))}
-              hint={`누적 ${data.totals.reb}`}
+              value={formatAvg(summary.perGame.reb)}
+              hint={`누적 ${summary.totals.reb}`}
               accent={tokens.series[1]}
             />
             <StatCard
               label="경기당 어시스트(통산)"
-              value={formatAvg(perGameAvg(data.totals.ast, data.games.length))}
-              hint={`누적 ${data.totals.ast}`}
+              value={formatAvg(summary.perGame.ast)}
+              hint={`누적 ${summary.totals.ast}`}
               accent={tokens.series[4]}
             />
             {/* [변경: 2026-07-15 13:01, 김병현 수정] 경기당 효율(EFF) 카드 추가(통산 스코프, 5번째 카드). */}
             <StatCard
               label="경기당 효율(통산)"
-              value={formatAvg(perGameAvg(efficiency(data.totals), data.games.length))}
-              hint={`누적 ${efficiency(data.totals)}`}
+              value={formatAvg(summary.perGame.eff)}
+              hint={`누적 ${summary.totals.eff}`}
               accent={tokens.series[3]}
             />
           </div>
@@ -87,7 +94,7 @@ export function PlayerDetailPage() {
               {data.games.length > 0 ? (
                 <TrendLine
                   data={toTrend(data.games)}
-                  seriesName="득점"
+                  series={[{ key: 'value', name: '득점' }]}
                   format={(v) => `${v}점`}
                   extraKeys={[
                     { key: 'opponent', label: '상대' },

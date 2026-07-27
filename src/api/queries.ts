@@ -39,7 +39,8 @@ export const queryKeys = {
   },
   player: {
     all: ['player'] as const,
-    by: (name: string) => ['player', name] as const,
+    // [변경: 2026-07-27 15:20, 김병현 수정] 대회 스코프가 생겨 키에 competitionId 를 넣는다.
+    by: (name: string, competitionId: number | null) => ['player', name, competitionId] as const,
   },
   leaderboard: {
     all: ['leaderboard'] as const,
@@ -88,10 +89,16 @@ export function usePlayers(competitionId: number | null): UseQueryResult<PlayerL
 }
 
 // 선수 상세. 라우트 파라미터가 비면(이론상) 안 부른다.
-export function usePlayer(name: string): UseQueryResult<PlayerDetail> {
+// 선수 상세. competitionId=null 이면 통산(전체 대회).
+// 그 조건에 기록이 없으면 에러가 아니라 data=null 이다(클라이언트가 404 를 흡수).
+// [변경: 2026-07-27 15:20, 김병현 수정] competitionId 인자 필수화(비교 화면의 대회 스코프 지원).
+export function usePlayer(
+  name: string,
+  competitionId: number | null,
+): UseQueryResult<PlayerDetail | null> {
   return useQuery({
-    queryKey: queryKeys.player.by(name),
-    queryFn: () => api.player(name),
+    queryKey: queryKeys.player.by(name, competitionId),
+    queryFn: () => api.player(name, competitionId),
     enabled: name !== '',
   });
 }
@@ -120,6 +127,8 @@ export async function invalidateAfterUpload(queryClient: QueryClient): Promise<v
     queryClient.invalidateQueries({ queryKey: queryKeys.summary.all }),
     queryClient.invalidateQueries({ queryKey: queryKeys.games.all }),
     queryClient.invalidateQueries({ queryKey: queryKeys.players.all }),
+    // [변경: 2026-07-27 15:20, 김병현 수정] 선수 상세도 업로드로 낡는다(빠져 있던 것 보완).
+    queryClient.invalidateQueries({ queryKey: queryKeys.player.all }),
     queryClient.invalidateQueries({ queryKey: queryKeys.leaderboard.all }),
   ]);
 }

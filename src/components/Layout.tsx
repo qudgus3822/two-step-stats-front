@@ -26,6 +26,10 @@ function ThemeToggle() {
 const navClass = ({ isActive }: { isActive: boolean }) =>
   isActive ? 'nav-link nav-link--active' : 'nav-link';
 
+// [변경: 2026-07-27 12:15, 김병현 수정] 운영자 메뉴(업로드)용 클래스 조합.
+// 활성/비활성 판정은 navClass 가 이미 알고 있으니 그대로 쓰고, 구분용 --admin 만 덧붙인다.
+const adminNavClass = (state: { isActive: boolean }) => `${navClass(state)} nav-link--admin`;
+
 export function Layout() {
   return (
     <div className="app-shell">
@@ -41,22 +45,34 @@ export function Layout() {
           <NavLink to="/" end className={navClass}>
             대시보드
           </NavLink>
-          <NavLink to="/games" className={navClass}>
+          {/* <NavLink to="/games" className={navClass}>
             경기
-          </NavLink>
+          </NavLink> */}
           <NavLink to="/players" className={navClass}>
             선수
+          </NavLink>
+          {/* [변경: 2026-07-27 16:40, 김병현 수정] 선수 비교 화면 진입점. "선수" 다음에 추가. */}
+          <NavLink to="/compare" className={navClass}>
+            선수 비교
           </NavLink>
           <NavLink to="/leaderboard" className={navClass}>
             리더보드
           </NavLink>
-          {/* [변경: 2026-07-14 14:21, 김병현 수정] 엑셀 기록지 업로드 탭 추가 */}
-          <NavLink to="/upload" className={navClass}>
-            업로드
-          </NavLink>
         </nav>
 
         <div className="topbar-controls">
+          {/* [변경: 2026-07-27 12:15, 김병현 수정] 업로드는 운영자 기능이라 일반 메뉴에서 떼어
+              오른쪽 컨트롤 묶음으로 옮겼다(탭을 숨기는 게 아니라 자리만 분리).
+              .topbar-controls 에 이미 margin-left:auto 가 있어서 여기 넣기만 하면 오른쪽으로 간다.
+              별도 <nav> 로 감싸는 이유: '주요 메뉴' 랜드마크 밖으로 나왔으니 자기 이름표가 있어야
+              스크린리더에서 "메뉴가 두 묶음"이라는 구조가 그대로 전달된다. */}
+          {/* [변경: 2026-07-14 14:21, 김병현 수정] 엑셀 기록지 업로드 탭 추가 */}
+          <nav className="nav nav--admin" aria-label="운영자 메뉴">
+            <NavLink to="/upload" className={adminNavClass} title="운영자 전용 · 비밀번호 필요">
+              <span aria-hidden="true">🔒</span>
+              업로드
+            </NavLink>
+          </nav>
           <CompetitionPicker />
           <ThemeToggle />
         </div>

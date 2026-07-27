@@ -4,7 +4,8 @@ import {
   type DragEvent,
   type FormEvent,
 } from 'react';
-import { Link } from 'react-router-dom';
+// [변경: 2026-07-27 11:24, 김병현 수정] 업로드 성공 시 대시보드 자동 이동을 위해 useNavigate 추가
+import { Link, useNavigate } from 'react-router-dom';
 // [변경: 2026-07-15 10:28, 김병현 수정] 업로드/삭제를 React Query 뮤테이션으로
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 // 주의: queryKeys 는 import 하지 않는다 — 대회 목록 무효화는 컨텍스트가 노출한 refresh() 를 재사용한다.
@@ -58,6 +59,8 @@ const YEAR_OPTIONS = [2030, 2029, 2028, 2027, 2026, 2025, 2024, 2023];
 export function UploadPage() {
   // [변경: 2026-07-15 10:28, 김병현 수정] invalidateAfterUpload(queryClient) 에서 쓰인다(업로드 성공 시 캐시 정리).
   const queryClient = useQueryClient();
+  // [변경: 2026-07-27 11:24, 김병현 수정] 업로드 성공 시 대시보드로 자동 이동하기 위한 네비게이터
+  const navigate = useNavigate();
   const {
     competitions,
     refresh,
@@ -96,6 +99,10 @@ export function UploadPage() {
       // append 모드는 competitionId 가 그대로라 세부 키가 안 바뀜 → 리소스 접두어로 통째 무효화(fan-out).
       await invalidateAfterUpload(queryClient);
       setCompetitionId(res.competitionId); // 방금 올린 대회로 이동 → 바로 확인
+      // [변경: 2026-07-27 11:24, 김병현 수정] 업로드 완료 시 대시보드로 자동 이동.
+      // 방금 올린 대회가 전역 필터로 선택된 상태라, 대시보드의 '경기 단위 통계'가
+      // 그 대회의 최신 경기(=방금 올린 경기)를 기본으로 바로 보여준다.
+      navigate('/');
     },
     // 409(중복 경기)면 모달을 열고, 그 외 에러는 uploadMutation.error 로 남겨 인라인 ErrorView 로 보여준다
     // (기존 try/catch 의 "UploadConflictError 면 모달, 아니면 uploadError" 상호배타 분기를 그대로 옮김).
@@ -377,6 +384,8 @@ export function UploadPage() {
         </div>
       )}
 
+      {/* [변경: 2026-07-27 11:24, 김병현 수정] 성공 시 곧바로 대시보드로 이동하므로 이 카드는
+          사실상 안 보인다(이동 전 찰나의 렌더 대비 안전망으로만 유지). */}
       {result && <UploadResultCard result={result} onReset={resetFile} />}
 
       {/* [변경: 2026-07-15 14:10, 김병현 수정] 409(중복 경기) → 덮어쓰기 확인 모달.

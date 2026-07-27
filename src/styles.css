@@ -159,6 +159,20 @@ h3 {
   margin-left: auto;
 }
 
+/* [변경: 2026-07-27 12:15, 김병현 수정] 운영자 메뉴(업로드) — 일반 메뉴에서 떼어 오른쪽에 둘 때
+   쓰는 구분선. 오른쪽 정렬은 위 .topbar-controls 의 margin-left:auto 가 이미 해주므로 여기선
+   "경계선"만 담당한다. 색은 일부러 안 건드린다 — .nav-link--active(위쪽 150행)와 특정도가 같아
+   여기서 color 를 주면 활성 상태의 흰 글자를 덮어써 버린다. */
+.nav--admin {
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
+}
+.nav-link--admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px; /* 자물쇠 아이콘과 글자 사이 */
+}
+
 .container {
   max-width: 1120px;
   margin: 0 auto;
@@ -1006,6 +1020,87 @@ h3 {
   margin-top: 16px;
 }
 
+/* ── 화면에는 안 보이고 스크린리더만 읽는 텍스트 ─────────────── */
+/* [신설: 2026-07-27 16:45, 김병현 작성] 비교표의 "더 높음" 안내용. 현재 유틸이 없어 신설. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── 선수 비교 ────────────────────────────────────────────────── */
+/* [신설: 2026-07-27 16:45, 김병현 작성] 기존 클래스(.card/.grid-2/.table/.select/.btn/.state)를
+   그대로 재사용하고, 좌우 대조에만 필요한 최소 클래스를 여기 더한다. */
+.compare-picker {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.compare-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+.compare-field-caption {
+  color: var(--muted);
+}
+.compare-table th.compare-metric,
+.compare-table td.compare-metric {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 550;
+}
+/* [변경: 2026-07-27 13:21, 김병현 수정] 비교표 마지막 줄 밑줄 정리.
+   공용 규칙(.table tbody tr:last-child td)은 td 만 잡는데, 비교표의 지표 칸은
+   화면 낭독기용으로 th(scope="row") 라서 그 칸만 밑줄이 남았다. */
+.compare-table tbody tr:last-child th {
+  border-bottom: none;
+}
+.compare-table th.compare-side--left {
+  text-align: right;
+}
+.compare-table th.compare-side--right {
+  text-align: left;
+}
+.compare-table td.compare-cell:last-child {
+  text-align: left;
+}
+.compare-value {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.compare-hint {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.compare-cell.is-better .compare-value {
+  font-weight: 800;
+}
+.compare-cell.is-better.is-left .compare-value {
+  color: var(--series-1);
+}
+.compare-cell.is-better.is-right .compare-value {
+  color: var(--series-2);
+}
+.compare-swatch--left {
+  background: var(--series-1);
+}
+.compare-swatch--right {
+  background: var(--series-2);
+}
+
 @media (max-width: 560px) {
   .container {
     padding: 20px 14px 48px;
@@ -1018,5 +1113,14 @@ h3 {
   }
   .nav-link {
     padding: 6px 10px;
+  }
+  /* [변경: 2026-07-27 12:15, 김병현 수정] 좁은 화면에선 헤더(.topbar)가 줄바꿈돼 운영자 메뉴가
+     새 줄 맨 앞에 오기 쉽다. 그때 세로 구분선은 나눌 대상이 없어 어색하니 없앤다.
+     참고: 실제 줄바꿈 지점은 내용 폭(대회명 길이 등)에 따라 달라져 560px 과 정확히 같지 않다.
+     이 값은 이 파일이 이미 쓰는 브레이크포인트에 맞춘 근사값이고, 어긋나는 구간에서 구분선이
+     잠깐 남는 건 허용한다(장식이라 기능엔 영향 없음). */
+  .nav--admin {
+    border-left: 0;
+    padding-left: 0;
   }
 }

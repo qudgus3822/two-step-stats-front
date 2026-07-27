@@ -28,6 +28,15 @@ export class UploadConflictError extends Error {
   }
 }
 
+// [변경: 2026-07-27 15:20, 김병현 수정] 상태코드를 살려 던진다.
+// 404("그 조건으론 기록이 없다")를 네트워크 오류와 구분하려면 status 가 필요하다.
+export class ApiError extends Error {
+  constructor(readonly status: number, message: string) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
 // API 주소: 환경변수 우선, 없으면 로컬 3000. 끝의 슬래시는 떼서 이중 슬래시 방지.
 // [변경: 2026-07-27 11:02, 김병현 수정] 백엔드가 setGlobalPrefix('api')로 바뀌어 기본값에 /api 추가. VITE_API_BASE_URL 을 쓸 때도 /api 까지 포함해야 함.
 const BASE = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api').replace(
@@ -47,6 +56,7 @@ async function request<T>(path: string): Promise<T> {
     );
   }
   if (!res.ok) {
+    // 본문 메시지 추출 로직은 그대로 — 상태코드만 ApiError 에 실어 던진다.
     const detail = await res.text().catch(() => '');
     let message = detail;
     try {
@@ -56,7 +66,7 @@ async function request<T>(path: string): Promise<T> {
     } catch {
       /* JSON 아니면 원문 그대로 */
     }
-    throw new Error(message || `요청 실패 (HTTP ${res.status})`);
+    throw new ApiError(res.status, message || `요청 실패 (HTTP ${res.status})`);
   }
   return res.json() as Promise<T>;
 }
@@ -161,8 +171,19 @@ export const api = {
   players: (competitionId?: number | null) =>
     request<PlayerListItem[]>(`/players${competitionQuery(competitionId)}`),
 
-  player: (name: string) =>
-    request<PlayerDetail>(`/players/${encodeURIComponent(name)}`),
+  // 선수 상세. competitionId 를 주면 그 대회만, 없으면 통산.
+  // 404 는 "이 조건으로는 기록 없음"이라 에러 대신 null 로 돌려준다
+  // (화면은 '못 찾음'과 '서버 문제'를 다르게 보여줘야 해서).
+  player: async (name: string, competitionId?: number | null): Promise<PlayerDetail | null> => {
+    try {
+      return await request<PlayerDetail>(
+        `/players/${encodeURIComponent(name)}${competitionQuery(competitionId)}`,
+      );
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) return null;
+      throw err;
+    }
+  },
 
   // [변경: 2026-07-14 17:49, 김병현 수정] limit 선택적 — 양수일 때만 쿼리에 붙이고, 생략/0이하면 서버가 전체 반환.
   leaderboard: (metric: LeaderboardMetric, limit?: number, competitionId?: number | null) => {
