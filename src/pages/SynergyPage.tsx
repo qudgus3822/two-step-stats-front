@@ -24,6 +24,8 @@ export function SynergyPage() {
   const [pickedTeammate, setPickedTeammate] = useState<string | null>(null);
 
   // 기준 선수: 고른 게 지금 목록에 있으면 그걸, 아니면 목록 첫 번째(= 경기당 득점 1위).
+  // [변경: 2026-07-28 15:44, 김병현 수정] 서버 정렬이 가나다순으로 바뀌어, 이제 첫 번째는
+  // "이름이 제일 앞선 선수"다(득점 1위 아님). 로직은 그대로 — 기본값의 의미만 달라졌다.
   // 대회를 바꾸면 목록이 갈리므로 자동으로 첫 번째로 되돌아간다(별도 effect 불필요).
   const basePlayer =
     pickedPlayer && players.some((p) => p.player === pickedPlayer)

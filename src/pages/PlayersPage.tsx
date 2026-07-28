@@ -10,6 +10,8 @@ import { formatAvg } from '../lib/format';
 
 // 선수 목록: 득점 많은 순 표. 이름으로 즉석 검색(클라이언트 필터)도 된다.
 // [변경: 2026-07-15 11:37, 김병현 수정] 메인 지표를 누적 득점 → 경기당 득점으로.
+// [변경: 2026-07-28 15:44, 김병현 수정] 정렬 기준이 이름 가나다순으로 바뀌었다(서버 listPlayers).
+// 경기당/누적 득점은 여전히 보여주지만, 이제 줄 세우는 기준은 아니다.
 
 export function PlayersPage() {
   const { competitionId, competitionLabel } = useCompetition();
@@ -30,7 +32,8 @@ export function PlayersPage() {
       <div className="page-head">
         <h1 className="page-title">선수</h1>
         {/* [변경: 2026-07-15 11:37, 김병현 수정] "득점순" → "경기당 득점순"으로 문구 변경. */}
-        <p className="page-sub">{competitionLabel ?? '전체 대회'} · 경기당 득점순</p>
+        {/* [변경: 2026-07-28 15:44, 김병현 수정] 실제 정렬이 가나다순으로 바뀌어 문구도 맞춘다. */}
+        <p className="page-sub">{competitionLabel ?? '전체 대회'} · 가나다순</p>
       </div>
 
       {/* [변경: 2026-07-15 10:28, 김병현 수정] loading→isLoading, error→error.message, reload→refetch */}
