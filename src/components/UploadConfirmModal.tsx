@@ -2,43 +2,43 @@ import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { GameConflict, NewPlayer } from '../api/types';
 
-// [변경: 2026-07-29 22:30, 김병현 수정] OverwriteConfirmModal → UploadConfirmModal 로 이름 변경.
+// [변경: 2026-07-29 15:33, 김병현 수정] OverwriteConfirmModal → UploadConfirmModal 로 이름 변경.
 // 왜: 이제 이 모달은 '덮어쓰기'만 묻지 않는다. 겹친 경기가 없고 처음 보는 이름만 있을 때도 뜨는데,
 // 그때 버튼이 '덮어쓰기'라고 쓰여 있으면 거짓말이다(덮어쓰는 게 없다). 이름이 정확해야 문구도 정확해진다.
 //
 // [변경: 2026-07-15 14:10, 김병현 수정] 업로드 중복 경기 덮어쓰기 확인 모달 신설.
 // 왜 별도 컴포넌트인가: 포커스 트랩/Esc/aria/portal 같은 접근성 기계장치를 화면(UploadPage)
 // 코드에서 떼어내 여기 한 곳에만 숨겨두기 위해서다. 소비자는 conflicts/onConfirm/onCancel/busy 만 넘긴다.
-// [변경: 2026-07-29 22:30, 김병현 수정] 위 '소비자는 conflicts/…만 넘긴다'는 옛 Props 기준이다 —
+// [변경: 2026-07-29 15:33, 김병현 수정] 위 '소비자는 conflicts/…만 넘긴다'는 옛 Props 기준이다 —
 // 지금은 conflicts 대신 games + newPlayers 두 배열을 받는다(아래 Props 참고).
 interface UploadConfirmModalProps {
   competition: string; // 표시 라벨
   games: GameConflict[]; // 겹친 경기들
-  // [변경: 2026-07-29 22:30, 김병현 수정] 필드명 conflicts → games, 이제 빈 배열일 수 있다(처음 보는 이름만 있는 경우).
-  newPlayers: NewPlayer[]; // [신설: 2026-07-29 22:30, 김병현 작성] 처음 보는 이름들(없으면 빈 배열)
+  // [변경: 2026-07-29 15:33, 김병현 수정] 필드명 conflicts → games, 이제 빈 배열일 수 있다(처음 보는 이름만 있는 경우).
+  newPlayers: NewPlayer[]; // [신설: 2026-07-29 15:33, 김병현 작성] 처음 보는 이름들(없으면 빈 배열)
   busy: boolean; // force 재전송 중(버튼 비활성 + "덮어쓰는 중…")
   onConfirm: () => void; // '덮어쓰기'
-  // [변경: 2026-07-29 22:30, 김병현 수정] 위 두 줄의 라벨은 hasGames 일 때 기준이다 —
+  // [변경: 2026-07-29 15:33, 김병현 수정] 위 두 줄의 라벨은 hasGames 일 때 기준이다 —
   // hasGames 가 false 면 버튼 라벨은 '이대로 올리기'/'올리는 중…'이다(아래 분기 참고).
   onCancel: () => void; // '취소'/Esc/백드롭
 }
 
-// [신설: 2026-07-29 22:30, 김병현 작성] 새 이름이 아주 많으면 앞 30명만 보여준다.
+// [신설: 2026-07-29 15:33, 김병현 작성] 새 이름이 아주 많으면 앞 30명만 보여준다.
 // (UploadResultCard 의 WARN_PREVIEW=50 과 같은 패턴 — 목록이 무한정 길어지는 걸 막는다.)
 const NEW_PLAYER_PREVIEW = 30;
 
-// [변경: 2026-07-29 22:30, 김병현 수정] 접두어를 owc(OverwriteConfirm)에서 ucm(UploadConfirmModal)으로.
+// [변경: 2026-07-29 15:33, 김병현 수정] 접두어를 owc(OverwriteConfirm)에서 ucm(UploadConfirmModal)으로.
 const TITLE_ID = 'ucm-title';
 const DESC_ID = 'ucm-desc';
 
-// [신설: 2026-07-29 22:30, 김병현 작성] 표시 전용 — 안 보이는 공백을 ␣ 로 바꿔 눈에 보이게.
+// [신설: 2026-07-29 15:33, 김병현 작성] 표시 전용 — 안 보이는 공백을 ␣ 로 바꿔 눈에 보이게.
 // 왜 필요한가: 제안은 'DB 옛 값'이라 앞뒤 공백이나 폭 없는 공백이 들어 있을 수 있다. 그대로 그리면
 // "처음 보는 이름 김병현 / 혹시 김병현 ?" 이라는 말도 안 되는 화면이 된다.
 // 왜 이 방법인가: 따옴표로 감싸는 방법(혹시 '김병현 ' ?)은 앞뒤 공백만 겨우 보이고 ZWSP 는 여전히
 // 안 보인다. <code> 로 감싸도 마찬가지. ␣ 치환만이 '모든' 공백을 실제로 드러낸다.
 // ⚠ 표시에만 쓴다. 이 값이 서버로 돌아가거나 저장되는 일은 절대 없다.
 // ⚠ p.name 에는 안 쓴다 — 그건 이미 정규화된 값이라 공백이 있을 수 없다.
-// [신설: 2026-07-29 22:30, 김병현 작성] ⚠ 서버 playerCheck.normalizePlayerName 의 문자 클래스를
+// [신설: 2026-07-29 15:33, 김병현 작성] ⚠ 서버 playerCheck.normalizePlayerName 의 문자 클래스를
 //   '손으로 맞춘' 복사본이다(레포가 달라 코드 공유가 불가능하다).
 //   한쪽을 고치면 반드시 다른 쪽도 고칠 것 — 어긋났는지 기계로 대조하는 명령은 §9 / AC 65-b 에 있다.
 const WHITESPACE_FOR_DISPLAY = /[\s\u200B-\u200D\uFEFF]/g;
@@ -116,7 +116,7 @@ export function UploadConfirmModal({
     return () => prev?.focus(); // 언마운트 시 복원
   }, []);
 
-  // [신설: 2026-07-29 22:30, 김병현 작성] 칸이 둘(겹친 경기 / 처음 보는 이름) 중 뭐가 뜨는지로
+  // [신설: 2026-07-29 15:33, 김병현 작성] 칸이 둘(겹친 경기 / 처음 보는 이름) 중 뭐가 뜨는지로
   // 제목·리드문단·h3·버튼 라벨·설명 문장이 전부 갈린다. 별도 타입 별칭을 안 만드는 이유는
   // CLAUDE.md 의 인라인 예외(컴포넌트 Props/함수 지역 타입)에 안 맞고, 애초에 불리언 2개로 충분해서다.
   const hasGames = games.length > 0;
@@ -205,7 +205,7 @@ export function UploadConfirmModal({
         )}
 
         {/* 안내 문구 2줄: id=owc-desc 로 dialog 의 aria-describedby 에 연결(스크린리더 보강) */}
-        {/* [변경: 2026-07-29 22:30, 김병현 수정] id 는 ucm-desc 로 바뀌었고, 이제 문장이 항상 2줄은
+        {/* [변경: 2026-07-29 15:33, 김병현 수정] id 는 ucm-desc 로 바뀌었고, 이제 문장이 항상 2줄은
             아니다(경우에 따라 1~4줄) — 그래도 세 경우 모두 항상 렌더돼 aria-describedby 가 항상 유효하다. */}
         <p id={DESC_ID} className="modal-body">
           {hasGames && (

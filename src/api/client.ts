@@ -8,7 +8,7 @@ import type {
   GrowthReport,
   LeaderboardMetric,
   LeaderboardRow,
-  // [신설: 2026-07-29 22:20, 김병현 작성] 처음 보는 선수 이름 타입.
+  // [신설: 2026-07-29 15:32, 김병현 작성] 처음 보는 선수 이름 타입.
   NewPlayer,
   PlayerDetail,
   PlayerListItem,
@@ -25,10 +25,10 @@ import type {
 
 // [변경: 2026-07-15 14:10, 김병현 수정] 409(중복 경기)는 문자열 메시지로 뭉개지 말고,
 // 충돌 목록을 살려 던진다 → 화면이 "덮어쓸까요?" 모달에 경기 목록을 보여줄 수 있게.
-// [변경: 2026-07-29 22:20, 김병현 수정] 409 본문 전체를 그대로 받는 생성자로 바꿨다.
+// [변경: 2026-07-29 15:32, 김병현 수정] 409 본문 전체를 그대로 받는 생성자로 바꿨다.
 // 이제 이 에러는 "409 본문을 Error 로 입은 것"이다 — 필드 기본값(undefined → [])을 여기서 흡수해
 // 호출부가 방어 코드를 쓰지 않아도 되게 한다.
-// [변경: 2026-07-29 22:20, 김병현 수정] 필드명 conflicts → games (서버 본문 필드명과 통일).
+// [변경: 2026-07-29 15:32, 김병현 수정] 필드명 conflicts → games (서버 본문 필드명과 통일).
 //   이제 '충돌'이 경기 말고 이름도 있어서, conflicts 라는 이름이 경기만 가리키면 헷갈린다.
 export class UploadConflictError extends Error {
   readonly games: GameConflict[];

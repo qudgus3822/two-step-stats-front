@@ -15,10 +15,10 @@ import { api, UploadConflictError } from '../api/client';
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — useSeason → useCompetition(리네임).
 // 대회 목록은 이제 전역 컨텍스트가 들고 있어서(등록/새로고침 공유), 이 화면이 따로 fetch 하지 않는다.
 import { useCompetition } from '../context/CompetitionContext';
-// [변경: 2026-07-29 22:40, 김병현 수정] 409 에 '처음 보는 이름'이 같이 실려 온다.
+// [변경: 2026-07-29 15:34, 김병현 수정] 409 에 '처음 보는 이름'이 같이 실려 온다.
 import type { Competition, GameConflict, NewPlayer, UploadResult } from '../api/types';
 import { ErrorView, Loading } from '../components/states';
-// [변경: 2026-07-29 22:40, 김병현 수정] OverwriteConfirmModal → UploadConfirmModal 로 이름 변경.
+// [변경: 2026-07-29 15:34, 김병현 수정] OverwriteConfirmModal → UploadConfirmModal 로 이름 변경.
 import { UploadConfirmModal } from '../components/UploadConfirmModal';
 
 // 기록지 엑셀 업로드 화면.
@@ -83,7 +83,7 @@ export function UploadPage() {
   // [변경: 2026-07-15 10:28, 김병현 수정] uploading/uploadError/result 제거 → uploadMutation 상태로 대체.
   const fileInputRef = useRef<HTMLInputElement>(null);
   // [변경: 2026-07-15 14:10, 김병현 수정] 409(중복 경기) 응답을 받으면 여기에 담아 확인 모달을 띄운다.
-  // [변경: 2026-07-29 22:40, 김병현 수정] 409 에 '처음 보는 이름'이 같이 실려 온다.
+  // [변경: 2026-07-29 15:34, 김병현 수정] 409 에 '처음 보는 이름'이 같이 실려 온다.
   const [conflict, setConflict] = useState<{
     competition: string;
     games: GameConflict[];
@@ -395,7 +395,7 @@ export function UploadPage() {
 
       {/* [변경: 2026-07-15 14:10, 김병현 수정] 409(중복 경기) → 덮어쓰기 확인 모달.
           취소는 setConflict(null) 만 — 파일/대회 선택은 그대로 두고(에러 아님) 모달만 닫는다. */}
-      {/* [변경: 2026-07-29 22:40, 김병현 수정] OverwriteConfirmModal → UploadConfirmModal, newPlayers 추가. */}
+      {/* [변경: 2026-07-29 15:34, 김병현 수정] OverwriteConfirmModal → UploadConfirmModal, newPlayers 추가. */}
       {conflict && (
         <UploadConfirmModal
           competition={conflict.competition}
