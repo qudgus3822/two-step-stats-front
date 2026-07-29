@@ -175,7 +175,7 @@ function SynergyTable({
     <section className="card">
       <div className="card-head">
         <h2 className="card-title">
-          {report.player} 선수가 같이 뛰었을 때 — {METRIC_LABELS[metric]}
+          {report.player} — {METRIC_LABELS[metric]}
         </h2>
         <span className="card-note">
           평소(전체 {report.games}경기) 경기당{" "}
@@ -189,8 +189,8 @@ function SynergyTable({
             <tr>
               <th className="col-rank">#</th>
               <th className="col-name">동료</th>
-              <th>함께</th>
-              <th>따로</th>
+              <th>함께 뛴 수</th>
+              <th>따로 뛴 수</th>
               <th>함께 평균</th>
               <th>따로 평균</th>
               <th>차이</th>
