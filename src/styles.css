@@ -692,6 +692,56 @@ h3 {
   }
 }
 
+/* ── 스켈레톤(표 자리표시) ───────────────────────────────────── */
+/* [신설: 2026-07-29 10:36, 김병현 작성] 스피너 대신 "표가 들어올 자리"를 회색 뼈대로 미리 그린다.
+   실제 기다리는 시간은 같아도 (1) 곧 온다는 게 읽히고 (2) 데이터 도착 때 화면이 안 덜컹거려서
+   더 빠르게 느껴진다. 칸 폭(grid-template-columns)은 컴포넌트가 인라인으로 넣는다 —
+   표마다 열 개수가 달라서 CSS 한 벌로는 못 맞춘다. */
+.skeleton-table {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px 0;
+}
+.skeleton-row {
+  display: grid;
+  gap: 14px;
+  align-items: center;
+}
+.skeleton-cell {
+  height: 14px;
+  border-radius: 6px;
+  background: var(--grid);
+  /* 왼→오른쪽으로 밝은 띠가 지나가는 효과. 배경을 400% 로 늘려 놓고 위치만 민다. */
+  background-image: linear-gradient(
+    90deg,
+    var(--grid) 30%,
+    color-mix(in srgb, var(--grid) 45%, transparent) 50%,
+    var(--grid) 70%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+/* 제목 행은 실제 표에서도 글자가 작아서 얇게. */
+.skeleton-row--head .skeleton-cell {
+  height: 10px;
+  opacity: 0.75;
+}
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+/* 움직임을 줄여 달라고 설정한 사용자에겐 띠를 안 흘린다(뼈대 자체는 그대로 보인다). */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-cell {
+    animation: none;
+  }
+}
+
 /* Recharts 표면 배경이 카드와 섞이도록 여백만 조금 */
 .chart-card .recharts-wrapper {
   font-family: inherit;

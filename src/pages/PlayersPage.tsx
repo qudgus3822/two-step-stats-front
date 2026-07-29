@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 // [변경: 2026-07-15 10:28, 김병현 수정] useApi → React Query usePlayers 로 이관
-import { usePlayers } from '../api/queries';
+// [변경: 2026-07-29 10:36, 김병현 수정] isStaleView 추가 — 대회를 바꾸는 동안 옛 표를 흐리게 유지.
+import { isStaleView, usePlayers } from '../api/queries';
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — useSeason → useCompetition(리네임).
 import { useCompetition } from '../context/CompetitionContext';
-import { Empty, ErrorView, Loading } from '../components/states';
+// [변경: 2026-07-29 10:36, 김병현 수정] 선수 링크를 PlayerLink 로 교체(마우스 올리면 상세 미리 받기).
+import { PlayerLink } from '../components/PlayerLink';
+import { Empty, ErrorView, TableSkeleton } from '../components/states';
 // [변경: 2026-07-15 11:37, 김병현 수정] formatAvg import 추가 — 경기당 득점 표시용.
 import { formatAvg } from '../lib/format';
 
@@ -16,7 +18,12 @@ import { formatAvg } from '../lib/format';
 export function PlayersPage() {
   const { competitionId, competitionLabel } = useCompetition();
   // [변경: 2026-07-15 10:28, 김병현 수정] useApi → usePlayers(React Query)
-  const { data, isLoading, error, refetch } = usePlayers(competitionId);
+  // [변경: 2026-07-29 10:36, 김병현 수정] 쿼리 객체를 통째로 들고 있는다 — isStaleView 가
+  // isFetching/isPlaceholderData 까지 봐야 해서 구조분해만으로는 부족하다.
+  const playersQuery = usePlayers(competitionId);
+  const { data, isLoading, error, refetch } = playersQuery;
+  // 대회를 바꾸면 새 목록이 올 때까지 옛 목록이 깔려 있다(placeholderData). 그동안 흐리게.
+  const stale = isStaleView(playersQuery);
   const [query, setQuery] = useState('');
 
   // 검색어로 거른 목록. 대소문자/공백 무시.
@@ -37,7 +44,8 @@ export function PlayersPage() {
       </div>
 
       {/* [변경: 2026-07-15 10:28, 김병현 수정] loading→isLoading, error→error.message, reload→refetch */}
-      {isLoading && <Loading />}
+      {/* [변경: 2026-07-29 10:36, 김병현 수정] 스피너 → 표 모양 뼈대. 열 6개(#/선수/팀/출전/경기당/누적). */}
+      {isLoading && <TableSkeleton rows={10} cols={6} />}
       {error && <ErrorView message={error.message} onRetry={() => refetch()} />}
       {data && data.length === 0 && <Empty>선수 기록이 없어요.</Empty>}
 
@@ -52,7 +60,9 @@ export function PlayersPage() {
             aria-label="선수 이름 검색"
           />
 
-          <div className="table-wrap card">
+          {/* [변경: 2026-07-29 10:36, 김병현 수정] 검색창은 그대로 두고 표만 흐리게 — 대회를 바꿔도
+              입력한 검색어는 계속 또렷하게 보여야 "내가 친 건 살아 있다"가 읽힌다. */}
+          <div className={`table-wrap card ${stale ? 'is-stale' : ''}`} aria-busy={stale}>
             <table className="table">
               <thead>
                 <tr>
@@ -70,9 +80,7 @@ export function PlayersPage() {
                   <tr key={p.player}>
                     <td className="num muted">{i + 1}</td>
                     <td className="col-name">
-                      <Link className="link" to={`/players/${encodeURIComponent(p.player)}`}>
-                        {p.player}
-                      </Link>
+                      <PlayerLink name={p.player} />
                     </td>
                     <td className="muted">{p.teams.join(', ')}</td>
                     <td className="num">{p.games}</td>

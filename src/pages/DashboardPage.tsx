@@ -5,7 +5,8 @@ import { useCompetition } from '../context/CompetitionContext';
 import { GameStatsPanel } from '../components/GameStatsPanel';
 // [변경: 2026-07-14 14:56, 김병현 수정] 요약 카드 제거로 StatCard import 삭제.
 // [변경: 2026-07-15 09:45, 김병현 수정] 득점 TOP·스탯 코드 분포 차트 제거로 Link·BarRanking·statCodeLabel·useTheme import 삭제.
-import { Empty, ErrorView, Loading } from '../components/states';
+// [변경: 2026-07-29 10:36, 김병현 수정] 스피너 → 표 모양 뼈대(TableSkeleton).
+import { Empty, ErrorView, TableSkeleton } from '../components/states';
 
 // 대시보드: 경기 기록을 한눈에.
 // [변경: 2026-07-15 09:45, 김병현 수정] 득점 TOP·스탯 코드 분포 차트 제거 — 이전엔 "전체 규모를 한눈에. 요약 카드 4개 + 득점 TOP + 스탯 코드 분포"였음.
@@ -27,7 +28,9 @@ export function DashboardPage() {
       </div>
 
       {/* [변경: 2026-07-15 10:28, 김병현 수정] loading→isLoading, error→error.message, reload→refetch */}
-      {summaryQuery.isLoading && <Loading />}
+      {/* [변경: 2026-07-29 10:36, 김병현 수정] 여기가 첫 화면이라 인상이 제일 중요하다.
+          아래에 뜰 GameStatsPanel 의 박스스코어와 비슷한 크기(열 9개)로 자리를 미리 잡아 둔다. */}
+      {summaryQuery.isLoading && <TableSkeleton rows={6} cols={9} />}
       {summaryQuery.error && (
         <ErrorView message={summaryQuery.error.message} onRetry={() => summaryQuery.refetch()} />
       )}

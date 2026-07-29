@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 // [변경: 2026-07-15 10:28, 김병현 수정] useApi → React Query useLeaderboard 로 이관
-import { useLeaderboard } from '../api/queries';
+// [변경: 2026-07-29 10:36, 김병현 수정] isStaleView 추가 — 지표 탭/대회를 바꾸는 동안 옛 순위를 흐리게 유지.
+import { isStaleView, useLeaderboard } from '../api/queries';
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — useSeason → useCompetition(리네임).
 import { useCompetition } from '../context/CompetitionContext';
 import { LEADERBOARD_METRICS, type LeaderboardMetric } from '../api/types';
 import { BarRanking, type BarDatum } from '../components/charts/BarRanking';
-import { Empty, ErrorView, Loading } from '../components/states';
+// [변경: 2026-07-29 10:36, 김병현 수정] 선수 링크를 PlayerLink 로 교체(마우스 올리면 상세 미리 받기).
+import { PlayerLink } from '../components/PlayerLink';
+import { Empty, ErrorView, TableSkeleton } from '../components/states';
 // [변경: 2026-07-15 11:37, 김병현 수정] formatAvg import 추가 — 차트/표의 경기당 평균 표시용.
 // [변경: 2026-07-15 13:01, 김병현 수정] formatPct import 추가 — 성공률(rate) 계열 표시용.
 import { METRIC_LABELS, formatAvg, formatPct } from '../lib/format';
@@ -23,7 +25,11 @@ export function LeaderboardPage() {
   const [metric, setMetric] = useState<LeaderboardMetric>('pts');
   // [변경: 2026-07-14 17:49, 김병현 수정] limit 생략 → 상위 N 제한 없이 전체 선수 조회.
   // [변경: 2026-07-15 10:28, 김병현 수정] useApi → useLeaderboard(React Query)
-  const { data, isLoading, error, refetch } = useLeaderboard(metric, competitionId);
+  // [변경: 2026-07-29 10:36, 김병현 수정] 쿼리 객체를 통째로 — isStaleView 가 isFetching/isPlaceholderData 까지 본다.
+  const boardQuery = useLeaderboard(metric, competitionId);
+  const { data, isLoading, error, refetch } = boardQuery;
+  // 지표 탭이 19개라 훑을 때 깜빡임이 제일 심한 화면이다. 새 순위가 올 때까지 옛 순위를 흐리게 유지.
+  const stale = isStaleView(boardQuery);
   // [변경: 2026-07-15 13:01, 김병현 수정] 계열(family)은 지표키에서 유추하지 않고 실제 응답 첫 행의 kind 로 정한다.
   // (부제 문구도 계열별로 달라야 해서 data.length>0 JSX 블록보다 앞에서 한 번만 계산해 재사용.)
   const family = data && data.length > 0 ? data[0].kind : null;
@@ -61,7 +67,8 @@ export function LeaderboardPage() {
       </div>
 
       {/* [변경: 2026-07-15 10:28, 김병현 수정] loading→isLoading, error→error.message, reload→refetch */}
-      {isLoading && <Loading />}
+      {/* [변경: 2026-07-29 10:36, 김병현 수정] 스피너 → 표 모양 뼈대. 열은 count 계열 기준 5개. */}
+      {isLoading && <TableSkeleton rows={10} cols={5} />}
       {error && <ErrorView message={error.message} onRetry={() => refetch()} />}
       {/* [변경: 2026-07-15 13:01, 김병현 수정] 빈 상태 문구를 계열 무관하게 일반화(AC20). */}
       {data && data.length === 0 && (
@@ -69,7 +76,9 @@ export function LeaderboardPage() {
       )}
 
       {data && data.length > 0 && (
-        <div className="grid-2">
+        // [변경: 2026-07-29 10:36, 김병현 수정] 차트+표를 통째로 흐리게. 지표 탭은 또렷하게 남아
+        // "방금 누른 탭"이 어디인지 계속 보인다(탭은 이 div 바깥이라 안 흐려진다).
+        <div className={`grid-2 ${stale ? 'is-stale' : ''}`} aria-busy={stale}>
           <section className="card chart-card">
             <div className="card-head">
               {/* [변경: 2026-07-15 11:37, 김병현 수정] 차트가 경기당 평균 기준임을 제목에 명시. */}
@@ -124,9 +133,7 @@ export function LeaderboardPage() {
                           <tr key={row.player}>
                             <td className="num muted">{row.rank}</td>
                             <td className="col-name">
-                              <Link className="link" to={`/players/${encodeURIComponent(row.player)}`}>
-                                {row.player}
-                              </Link>
+                              <PlayerLink name={row.player} />
                             </td>
                             <td className="num">{row.games}</td>
                             {/* [변경: 2026-07-15 11:37, 김병현 수정] 경기당(strong)·누적(muted) 순서·강조 교체. */}
@@ -156,9 +163,7 @@ export function LeaderboardPage() {
                           <tr key={row.player}>
                             <td className="num muted">{row.rank}</td>
                             <td className="col-name">
-                              <Link className="link" to={`/players/${encodeURIComponent(row.player)}`}>
-                                {row.player}
-                              </Link>
+                              <PlayerLink name={row.player} />
                             </td>
                             <td className="num">{row.games}</td>
                             <td className="num strong">{formatPct(row.pct)}</td>
@@ -191,9 +196,7 @@ export function LeaderboardPage() {
                           <tr key={row.player}>
                             <td className="num muted">{row.rank}</td>
                             <td className="col-name">
-                              <Link className="link" to={`/players/${encodeURIComponent(row.player)}`}>
-                                {row.player}
-                              </Link>
+                              <PlayerLink name={row.player} />
                             </td>
                             <td className="num">{row.games}</td>
                             <td className="num strong">{formatAvg(row.sum)}</td>

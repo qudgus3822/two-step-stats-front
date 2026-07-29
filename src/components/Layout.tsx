@@ -2,6 +2,8 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { useTheme } from '../theme/ThemeContext';
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — SeasonPicker → CompetitionPicker(리네임).
 import { CompetitionPicker } from './CompetitionPicker';
+// [변경: 2026-07-29 10:36, 김병현 수정] 탭에 마우스만 올려도 그 화면 데이터를 미리 받는다(체감속도).
+import { usePrefetch, type PrefetchRoute } from '../hooks/usePrefetch';
 
 // 앱 껍데기: 위쪽 헤더(로고 + 메뉴 + 대회선택 + 다크모드 토글) + 아래 본문.
 // 모든 페이지가 이 안에 <Outlet/> 으로 끼워진다.
@@ -31,6 +33,15 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
 const adminNavClass = (state: { isActive: boolean }) => `${navClass(state)} nav-link--admin`;
 
 export function Layout() {
+  // [변경: 2026-07-29 10:36, 김병현 수정] 미리 받기 트리거.
+  const prefetch = usePrefetch();
+  // 탭 하나에 붙일 이벤트 한 벌. 마우스를 올렸을 때(hover)와 키보드로 옮겨왔을 때(focus) 둘 다.
+  // 스프레드로 붙이는 이유: 탭이 6개라 각 NavLink 에 두 줄씩 적으면 12줄이 똑같이 반복된다.
+  const prefetchOn = (route: PrefetchRoute) => ({
+    onMouseEnter: () => prefetch.route(route),
+    onFocus: () => prefetch.route(route),
+  });
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -42,28 +53,29 @@ export function Layout() {
         </NavLink>
 
         <nav className="nav" aria-label="주요 메뉴">
-          <NavLink to="/" end className={navClass}>
+          {/* [변경: 2026-07-29 10:36, 김병현 수정] 각 탭에 prefetchOn 추가 — 클릭 전에 미리 받는다. */}
+          <NavLink to="/" end className={navClass} {...prefetchOn('/')}>
             대시보드
           </NavLink>
           {/* <NavLink to="/games" className={navClass}>
             경기
           </NavLink> */}
-          <NavLink to="/players" className={navClass}>
+          <NavLink to="/players" className={navClass} {...prefetchOn('/players')}>
             선수
           </NavLink>
           {/* [변경: 2026-07-27 16:40, 김병현 수정] 선수 비교 화면 진입점. "선수" 다음에 추가. */}
-          <NavLink to="/compare" className={navClass}>
+          <NavLink to="/compare" className={navClass} {...prefetchOn('/compare')}>
             선수 비교
           </NavLink>
-          <NavLink to="/leaderboard" className={navClass}>
+          <NavLink to="/leaderboard" className={navClass} {...prefetchOn('/leaderboard')}>
             리더보드
           </NavLink>
           {/* [변경: 2026-07-27 16:14, 김병현 수정] 시너지(동료별 WOWY) 탭 추가. "리더보드" 다음. */}
-          <NavLink to="/synergy" className={navClass}>
+          <NavLink to="/synergy" className={navClass} {...prefetchOn('/synergy')}>
             시너지
           </NavLink>
           {/* [변경: 2026-07-28 15:00, 김병현 수정] 기량 발전(직전 시즌 대비 상승률) 탭 추가. "시너지" 다음. */}
-          <NavLink to="/growth" className={navClass}>
+          <NavLink to="/growth" className={navClass} {...prefetchOn('/growth')}>
             기량 발전
           </NavLink>
         </nav>

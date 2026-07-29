@@ -1,11 +1,13 @@
 // [신설: 2026-07-27 16:35, 김병현 작성]
 import { Link } from 'react-router-dom';
-import { usePlayer, usePlayers } from '../api/queries';
+// [변경: 2026-07-29 10:36, 김병현 수정] isStaleView 추가 — 대회 스코프를 바꾸는 동안 옛 비교표를 흐리게 유지.
+import { isStaleView, usePlayer, usePlayers } from '../api/queries';
 import type { PlayerDetail, PlayerListItem } from '../api/types';
 import { ResultBadge } from '../components/Badge';
 import { CompareTable } from '../components/CompareTable';
 import { TrendLine } from '../components/charts/TrendLine';
-import { Empty, ErrorView, Loading } from '../components/states';
+// [변경: 2026-07-29 10:36, 김병현 수정] 스피너 → 비교표 모양 뼈대(TableSkeleton, 지표+두 선수 = 열 3개).
+import { Empty, ErrorView, TableSkeleton } from '../components/states';
 import { useCompareSelection } from '../hooks/useCompareSelection';
 import { buildComparisonTrend, buildShootingRows, buildSummaryRows } from '../lib/comparison';
 import { gameLabel } from '../lib/format';
@@ -38,6 +40,9 @@ export function ComparePage() {
   // 결과 영역 수준: 선택된 선수의 상세만 본다(미선택 쿼리는 enabled:false 라 항상 조용하다).
   const detailLoading = leftQuery.isLoading || rightQuery.isLoading;
   const detailError = leftQuery.error ?? rightQuery.error;
+  // [변경: 2026-07-29 10:36, 김병현 수정] 대회 스코프만 바꾸면(같은 두 선수) 옛 비교표가 깔린 채로
+  // 새 값이 온다(playerOptions 의 조건부 placeholderData). 둘 중 하나라도 갱신 중이면 흐리게.
+  const detailStale = isStaleView(leftQuery) || isStaleView(rightQuery);
 
   const bothPicked = !!playerA && !!playerB && playerA !== playerB;
   const left = leftQuery.data;
@@ -55,7 +60,7 @@ export function ComparePage() {
       {pageError ? (
         <ErrorView message={pageError.message} onRetry={() => playersQuery.refetch()} />
       ) : pageLoading ? (
-        <Loading />
+        <TableSkeleton rows={6} cols={3} />
       ) : players.length === 0 ? (
         <Empty>이 대회엔 선수 기록이 없어요.</Empty>
       ) : (
@@ -99,11 +104,15 @@ export function ComparePage() {
               }}
             />
           ) : detailLoading ? (
-            <Loading />
+            <TableSkeleton rows={6} cols={3} />
           ) : !left || !right ? (
             <Empty>{missingRecordMessage(playerA ?? '', playerB ?? '', left, right)}</Empty>
           ) : (
-            <CompareResults left={left} right={right} />
+            // [변경: 2026-07-29 10:36, 김병현 수정] 선택 바는 또렷하게 두고 결과만 흐리게 —
+            // 방금 바꾼 선택이 화면에 그대로 남아 있어야 "먹혔다"가 읽힌다.
+            <div className={detailStale ? 'is-stale' : ''} aria-busy={detailStale}>
+              <CompareResults left={left} right={right} />
+            </div>
           )}
         </>
       )}

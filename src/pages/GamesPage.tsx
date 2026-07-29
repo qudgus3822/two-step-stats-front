@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 // [변경: 2026-07-15 10:28, 김병현 수정] useApi → React Query useGames 로 이관
-import { useGames } from '../api/queries';
+// [변경: 2026-07-29 10:36, 김병현 수정] isStaleView 추가 — 대회를 바꾸는 동안 옛 목록을 흐리게 유지.
+import { isStaleView, useGames } from '../api/queries';
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — useSeason → useCompetition(리네임).
 import { useCompetition } from '../context/CompetitionContext';
 import type { GameSummary } from '../api/types';
@@ -12,7 +13,10 @@ import { gameLabel } from '../lib/format';
 export function GamesPage() {
   const { competitionId, competitionLabel } = useCompetition();
   // [변경: 2026-07-15 10:28, 김병현 수정] useApi → useGames(React Query)
-  const { data, isLoading, error, refetch } = useGames(competitionId);
+  // [변경: 2026-07-29 10:36, 김병현 수정] 쿼리 객체를 통째로 — isStaleView 가 isFetching/isPlaceholderData 까지 본다.
+  const gamesQuery = useGames(competitionId);
+  const { data, isLoading, error, refetch } = gamesQuery;
+  const stale = isStaleView(gamesQuery);
 
   return (
     <div className="page">
@@ -27,7 +31,8 @@ export function GamesPage() {
       {data && data.length === 0 && <Empty>경기 기록이 없어요.</Empty>}
 
       {data && data.length > 0 && (
-        <ul className="game-list">
+        // [변경: 2026-07-29 10:36, 김병현 수정] 대회를 바꾸는 동안 옛 목록을 지우지 않고 흐리게만.
+        <ul className={`game-list ${stale ? 'is-stale' : ''}`} aria-busy={stale}>
           {data.map((game) => (
             <li key={game.id}>
               <GameRow game={game} />

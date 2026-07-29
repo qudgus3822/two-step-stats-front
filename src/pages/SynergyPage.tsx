@@ -5,12 +5,15 @@
 // 지표 탭은 이미 받은 데이터 안에서 정렬만 바뀐다. 선택 상태(기준 선수/펼친 동료)는
 // GameStatsPanel 관례처럼 useEffect 없이 파생 계산으로만 처리한다.
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { usePlayers, useSynergy } from '../api/queries';
+// [변경: 2026-07-29 10:36, 김병현 수정] 선수 링크를 PlayerLink 로 교체(마우스 올리면 상세 미리 받기).
+import { PlayerLink } from '../components/PlayerLink';
+// [변경: 2026-07-29 10:36, 김병현 수정] stale 판정을 isStaleView 로 공용화(기량 발전 화면과 같은 식).
+import { isStaleView, usePlayers, useSynergy } from '../api/queries';
 import { useCompetition } from '../context/CompetitionContext';
 import { SYNERGY_METRICS, type SynergyMetric, type SynergyReport, type SynergyRow } from '../api/types';
 import { StatCard } from '../components/StatCard';
-import { Empty, ErrorView, Loading } from '../components/states';
+// [변경: 2026-07-29 10:36, 김병현 수정] 스피너 → 표 모양 뼈대(TableSkeleton).
+import { Empty, ErrorView, TableSkeleton } from '../components/states';
 import { METRIC_LABELS, deltaTone, formatAvg, formatDelta } from '../lib/format';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -34,13 +37,14 @@ export function SynergyPage() {
 
   // 이름을 synergy* 로 구분한다. 선수 목록 쿼리(playersQuery)와 재시도 대상이 섞이면
   // "다시 시도" 버튼이 엉뚱한 쿼리를 부르게 된다.
+  // [변경: 2026-07-29 10:36, 김병현 수정] 쿼리 객체를 통째로 들고 있는다(isStaleView 에 넘기려고).
+  const synergyQuery = useSynergy(basePlayer, metric, competitionId);
   const {
     data,
     isLoading: synergyLoading,
-    isFetching: synergyFetching,
     error: synergyError,
     refetch: synergyRefetch,
-  } = useSynergy(basePlayer, metric, competitionId);
+  } = synergyQuery;
   const rows = data?.rows ?? [];
   // 펼친 동료도 같은 방식(파생 계산)으로 검증한다. 지금 rows 에 없으면 상세를 안 그린다.
   // 지표 탭을 바꿔도 rows 가 (placeholderData 덕분에) 한 순간도 비지 않아 상세가 안 사라진다.
@@ -50,7 +54,10 @@ export function SynergyPage() {
     : null;
 
   // 지표/선수/대회 전환 중 잠깐 옛 표를 그대로 띄워 두는 구간(결정 9). 첫 로딩은 제외.
-  const stale = synergyFetching && !synergyLoading;
+  // [변경: 2026-07-29 10:36, 김병현 수정] 같은 판정식을 여러 화면이 쓰게 돼서 isStaleView 로 옮겼다.
+  // 덤으로 isPlaceholderData 도 함께 본다 — 갱신이 실패해 멈춰도 낡은 표가 또렷해지지 않는다
+  // (기량 발전 화면이 리뷰 R1/R2 로 먼저 고쳤던 구멍이 여기에도 있었다).
+  const stale = isStaleView(synergyQuery);
 
   return (
     <div className="page">
@@ -59,7 +66,8 @@ export function SynergyPage() {
         <p className="page-sub">{competitionLabel ?? '전체 대회'} · 같은 팀으로 함께 뛴 경기 기준</p>
       </div>
 
-      {playersQuery.isLoading && <Loading />}
+      {/* [변경: 2026-07-29 10:36, 김병현 수정] 스피너 → 동료 순위표 모양 뼈대(열 7개). */}
+      {playersQuery.isLoading && <TableSkeleton rows={8} cols={7} />}
       {playersQuery.error && (
         <ErrorView message={playersQuery.error.message} onRetry={() => playersQuery.refetch()} />
       )}
@@ -102,7 +110,7 @@ export function SynergyPage() {
             ))}
           </div>
 
-          {synergyLoading && <Loading />}
+          {synergyLoading && <TableSkeleton rows={8} cols={7} />}
           {synergyError && (
             <ErrorView message={synergyError.message} onRetry={() => synergyRefetch()} />
           )}
@@ -234,9 +242,7 @@ function SynergyDetail({ report, detail }: { report: SynergyReport; detail: Syne
         </h2>
         <span className="card-note">
           함께 {detail.togetherGames}경기 · 따로 {detail.apartGames}경기 ·{' '}
-          <Link className="link" to={`/players/${encodeURIComponent(detail.teammate)}`}>
-            {detail.teammate} 상세 →
-          </Link>
+          <PlayerLink name={detail.teammate}>{detail.teammate} 상세 →</PlayerLink>
         </span>
       </div>
       <div className="stat-grid">

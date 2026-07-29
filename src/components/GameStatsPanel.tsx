@@ -1,13 +1,15 @@
 import { useState } from 'react';
 // [변경: 2026-07-15 10:28, 김병현 수정] useApi → React Query useGames/useGameBox 로 이관
-import { useGameBox, useGames } from '../api/queries';
+// [변경: 2026-07-29 10:36, 김병현 수정] isStaleView 추가 — 경기를 바꾸는 동안 옛 표를 흐리게 유지.
+import { isStaleView, useGameBox, useGames } from '../api/queries';
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — useSeason → useCompetition(리네임).
 import { useCompetition } from '../context/CompetitionContext';
 // 주의: GameBox 는 아래 TeamSummary({ box }: { box: GameBox }) 시그니처에서 여전히 쓰이므로 type import 는 유지.
 import type { GameBox, GameSummary, PlayerLine } from '../api/types';
 import { BoxScoreTable } from './BoxScoreTable';
 import { CompetitionPicker } from './CompetitionPicker';
-import { Empty, ErrorView, Loading } from './states';
+// [변경: 2026-07-29 10:36, 김병현 수정] 스피너 → 표 모양 뼈대(TableSkeleton).
+import { Empty, ErrorView, TableSkeleton } from './states';
 import { gameLabel } from '../lib/format';
 import { seriesColor } from '../theme/palette';
 import { useTheme } from '../theme/ThemeContext';
@@ -46,6 +48,14 @@ export function GameStatsPanel() {
   // enabled:false 로 안 부른다(무한 스피너 방지는 loading→isLoading 매핑이 담당).
   const boxQuery = useGameBox(activeId);
   const box = boxQuery.data;
+  // [변경: 2026-07-29 10:36, 김병현 수정] 드롭다운으로 경기를 바꾸면 새 표가 올 때까지 옛 표가
+  // 깔려 있다(placeholderData). 그동안 흐리게 해서 "지금 보이는 건 아직 이전 경기"임을 알린다.
+  // 표 안에 팀 이름과 점수가 같이 적혀 있어 무엇을 보고 있는지는 표 스스로 말해 준다.
+  //
+  // gamesQuery 까지 같이 보는 이유: 대회를 바꾸면 경기 "목록"이 먼저 갈리는데, 새 목록이 오기
+  // 전까지 activeId 는 이전 대회의 경기다 → 박스스코어 자체는 신선(isFetching=false)해도
+  // 지금 고른 대회의 경기가 아니다. 목록이 갱신 중이면 표도 아직 못 믿는다는 뜻이라 같이 흐린다.
+  const boxStale = isStaleView(boxQuery) || isStaleView(gamesQuery);
 
   return (
     <section className="card">
@@ -77,7 +87,8 @@ export function GameStatsPanel() {
       </div>
 
       {/* [변경: 2026-07-15 10:28, 김병현 수정] loading→isLoading, error→error.message, reload→refetch */}
-      {gamesQuery.isLoading && <Loading />}
+      {/* [변경: 2026-07-29 10:36, 김병현 수정] 스피너 → 표 모양 뼈대(팀 요약표 = 열 9개). */}
+      {gamesQuery.isLoading && <TableSkeleton rows={4} cols={9} />}
       {gamesQuery.error && (
         <ErrorView message={gamesQuery.error.message} onRetry={() => gamesQuery.refetch()} />
       )}
@@ -89,12 +100,14 @@ export function GameStatsPanel() {
       {list.length > 0 && (
         <>
           {/* [변경: 2026-07-15 10:28, 김병현 수정] loading→isLoading(isPending 아님 — 비활성 쿼리 무한 스피너 방지) */}
-          {boxQuery.isLoading && <Loading />}
+          {/* [변경: 2026-07-29 10:36, 김병현 수정] 스피너 → 표 모양 뼈대(박스스코어 = 열 9개). */}
+          {boxQuery.isLoading && <TableSkeleton rows={8} cols={9} />}
           {boxQuery.error && (
             <ErrorView message={boxQuery.error.message} onRetry={() => boxQuery.refetch()} />
           )}
           {box && (
-            <>
+            // [변경: 2026-07-29 10:36, 김병현 수정] 경기 전환 중에는 옛 표를 흐리게 유지.
+            <div className={boxStale ? 'is-stale' : ''} aria-busy={boxStale}>
               <TeamSummary box={box} />
               {box.teams.map((t, i) => (
                 <div className="team-box" key={t.team}>
@@ -112,7 +125,7 @@ export function GameStatsPanel() {
                   <BoxScoreTable players={t.players} />
                 </div>
               ))}
-            </>
+            </div>
           )}
         </>
       )}

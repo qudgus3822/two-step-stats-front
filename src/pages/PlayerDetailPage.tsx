@@ -6,7 +6,9 @@ import { ResultBadge, TeamBadge } from '../components/Badge';
 import { ShootingSplits } from '../components/ShootingSplits';
 import { StatCard } from '../components/StatCard';
 import { TrendLine, type TrendPoint } from '../components/charts/TrendLine';
-import { Empty, ErrorView, Loading } from '../components/states';
+// [변경: 2026-07-29 10:36, 김병현 수정] 스피너 → 표 모양 뼈대(TableSkeleton).
+// (선수 목록/리더보드에서 이름에 마우스만 올려도 미리 받아 두므로, 보통은 이 뼈대도 안 보인다.)
+import { Empty, ErrorView, TableSkeleton } from '../components/states';
 // [변경: 2026-07-15 11:37, 김병현 수정] perGameAvg, formatAvg import 추가 — 요약 카드 경기당 평균 계산·표시용.
 // [변경: 2026-07-15 13:01, 김병현 수정] efficiency import 추가 — 경기당 효율(EFF) 카드 계산용.
 // [변경: 2026-07-27 16:10, 김병현 수정] 경기당 평균/EFF 계산을 summarizePlayer 로 옮겨서
@@ -39,7 +41,8 @@ export function PlayerDetailPage() {
       </div>
 
       {/* [변경: 2026-07-15 10:28, 김병현 수정] loading→isLoading, error→error.message, reload→refetch */}
-      {isLoading && <Loading />}
+      {/* [변경: 2026-07-29 10:36, 김병현 수정] 경기 로그 표(열 8개) 자리를 미리 잡는다. */}
+      {isLoading && <TableSkeleton rows={8} cols={8} />}
       {error && <ErrorView message={error.message} onRetry={() => refetch()} />}
       {!isLoading && !error && !data && <Empty>선수를 찾을 수 없어요.</Empty>}
 

@@ -10,8 +10,10 @@
 // boardQuery 하나뿐이다. 종합 계산(결정 3, EFF 하한)은 백엔드 규칙으로 그대로 살아 있고,
 // tinyBaseCount 고지는 표 아래 안내로 자리를 옮겼다(AC 83-b).
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { useGrowth } from "../api/queries";
+// [변경: 2026-07-29 10:36, 김병현 수정] stale 판정을 isStaleView 로 공용화(같은 식을 여러 화면이 쓴다).
+import { isStaleView, useGrowth } from "../api/queries";
+// [변경: 2026-07-29 10:36, 김병현 수정] 선수 링크를 PlayerLink 로 교체(마우스 올리면 상세 미리 받기).
+import { PlayerLink } from "../components/PlayerLink";
 import { useCompetition } from "../context/CompetitionContext";
 import {
   GROWTH_METRICS,
@@ -20,7 +22,8 @@ import {
   type GrowthReport,
   type GrowthRow,
 } from "../api/types";
-import { Empty, ErrorView, Loading } from "../components/states";
+// [변경: 2026-07-29 10:36, 김병현 수정] 스피너 → 표 모양 뼈대(TableSkeleton).
+import { Empty, ErrorView, Loading, TableSkeleton } from "../components/states";
 import {
   GROWTH_KIND_VIEW,
   GROWTH_BASIS_LABELS,
@@ -48,9 +51,9 @@ export function GrowthPage() {
   // 살아 있으면 낡은 표가 멀쩡한 값처럼 보인다(리뷰 R1/R2). isPlaceholderData 도 같이 흐려서
   // "지금 보이는 게 최신이 아니다"를 놓치지 않게 한다 — 특히 지표 탭을 바꾼 순간의 # 열은
   // 옛 지표로 매겨진 순위라 값이 안 맞는데, 흐려지기라도 해야 사용자가 눈치챈다.
-  const stale =
-    (boardQuery.isFetching && !boardQuery.isLoading) ||
-    boardQuery.isPlaceholderData;
+  // [변경: 2026-07-29 10:36, 김병현 수정] 같은 판정식을 시너지·선수·리더보드도 쓰게 돼서
+  // isStaleView 로 옮겼다(식은 그대로 — 여기 있던 규칙이 공용 규칙이 된 것).
+  const stale = isStaleView(boardQuery);
 
   const scopeLabel = labelOf(scopeId) ?? "대회 확인 중";
 
@@ -87,7 +90,8 @@ export function GrowthPage() {
 
       {!loading && !error && competitions.length > 0 && (
         <>
-          {boardQuery.isLoading && <Loading />}
+          {/* [변경: 2026-07-29 10:36, 김병현 수정] 스피너 → 발전 순위표 모양 뼈대(열 7개). */}
+          {boardQuery.isLoading && <TableSkeleton rows={8} cols={7} />}
           {boardQuery.error && (
             <ErrorView
               message={boardQuery.error.message}
@@ -251,12 +255,7 @@ function GrowthTableRow({
     <tr className={row.rank == null ? "row-muted" : ""}>
       <td className="num muted">{row.rank ?? "—"}</td>
       <td className="col-name">
-        <Link
-          className="link"
-          to={`/players/${encodeURIComponent(row.player)}`}
-        >
-          {row.player}
-        </Link>
+        <PlayerLink name={row.player} />
         {row.isNew && <span className="badge badge--team">신규</span>}
         {/* [변경: 2026-07-28 17:00, 김병현 수정] v3.1 — !qualified 대신 unqualifiedBy 로 뱃지를
             고른다(AC 50). 카운트 탭은 games 뿐이라 문구가 v2 와 똑같다(표본 부족) — 회귀 없음. */}
