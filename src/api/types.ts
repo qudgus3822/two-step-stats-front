@@ -227,3 +227,95 @@ export interface SynergyReport {
   overall: Record<SynergyMetric, number>; // 동료와 무관한 "평소" 경기당 평균
   rows: SynergyRow[];
 }
+
+// [변경: 2026-07-28 15:00, 김병현 수정] 기량 발전 탭 — 백엔드 stats/growth.ts 미러.
+// 순서·이름을 백엔드와 똑같이 유지할 것(응답을 그대로 받아 쓰는 계약).
+// ⚠ 백엔드와 똑같이 **한 줄**로. 줄바꿈하면 ASI 때문에 TS1434(컴파일 실패).
+// [변경: 2026-07-28 17:00, 김병현 수정] v3.1 — 성공률 2종('fg2Pct','fg3Pct') 을 카운트 7종 뒤에 추가(결정 14).
+export const GROWTH_METRICS = ['eff', 'pts', 'reb', 'ast', 'stl', 'blk', 'tov', 'fg2Pct', 'fg3Pct'] as const satisfies readonly LeaderboardMetric[];
+export type GrowthMetric = (typeof GROWTH_METRICS)[number];
+
+// [신설: 2026-07-28 17:00, 김병현 작성] 지표 계열(결정 11). 같은 GrowthSplit.pct 필드에
+// 카운트는 "상대 증가율(%)", 성공률은 "두 값의 차이(퍼센트포인트)"가 들어간다 — 프론트는 이 값을
+// 보고 표기를 고르지, 'fg2Pct'/'fg3Pct' 문자열을 하드코딩하지 않는다.
+export type GrowthKind = 'perGame' | 'rate';
+
+// [신설: 2026-07-28 18:00, 김병현 작성] v3.1 구현 리뷰 D6 — "성공률 탭에서 화면이 달라지는 것
+// 전부"를 담는 기술자에 이름을 준다. 인라인 `(typeof X)[keyof typeof X]` 로 두면 읽는 사람이
+// lib/format.ts 까지 따라가야 뜻을 안다(v2 리뷰 R4 와 같은 유형의 반복 — 타입 인라인 금지 규칙과도 맞는다).
+// 실제 값 표는 lib/format.ts 의 GROWTH_KIND_VIEW 에 있다(이 타입은 그 표의 모양만 정의).
+export interface GrowthKindView {
+  valueColumnWord: string; // 열 제목 낱말: '평균' | '성공률'
+  deltaColumnLabel: string; // 발전률 열 제목: '발전률' | '발전 (%p)'
+  // [신설: 2026-07-28 18:00, 김병현 작성] v3.1 구현 리뷰 D5 — 값에 단위가 이미 화면에 보이면(perGame
+  // 은 '+38.2%' 처럼 % 가 이미 붙는다) 빈 문자열을 준다. 스크린리더가 "퍼센트, 퍼센트"로 두 번
+  // 읽는 걸 막는다 — 단위가 안 보이는 rate 탭('+10.0')만 이 낱말이 실제로 필요하다.
+  deltaUnitSr: string; // 스크린리더용 단위 낱말: '' | '퍼센트포인트'
+  cardNote: string; // '경기당 평균 기준' | '시즌 누적 성공/시도 기준'
+  // [신설: 2026-07-28 18:00, 김병현 작성] v3.1 구현 리뷰 D1 — "직전 값이 0/작으면 —" 문장은
+  // perGame 에만 맞는 말이다(rate 는 나눗셈이 없어 0.0% 도 정상값). 계열별로 다른 문장을 여기서 낸다.
+  baseNote: string;
+  formatValue: (n: number) => string; // '8.4' | '40.0%'
+  formatDelta: (n: number) => string; // '+38.2%' | '+10.0'
+  // rate 전용 안내 두 줄(자격 최소 시도 등). perGame 은 빈 배열을 준다.
+  extraNotes: (minAttempts: number) => string[];
+}
+
+// [신설: 2026-07-28 17:00, 김병현 작성] 자격 미달 사유. 경기 수/시도 수 규칙을 프론트가 다시
+// 계산하지 않게 서버가 알려 준다. qualified === (unqualifiedBy === 'none') 이 항상 성립한다.
+export type GrowthUnqualified = 'none' | 'games' | 'attempts' | 'both';
+
+// % 가 없는 이유. 화면이 "왜 —인지"를 사람 말로 바꿔 보여준다.
+// [변경: 2026-07-28 17:00, 김병현 수정] v3.1 — 'no-attempts' 추가(성공률인데 그 시즌 시도가 0회).
+export type GrowthBasis = 'ok' | 'no-prev' | 'from-zero' | 'both-zero' | 'tiny-base' | 'no-attempts';
+
+// 비교에 쓴 시즌 한쪽의 신원.
+export interface GrowthSeason {
+  competitionId: number;
+  label: string; // 표시 라벨(=Competition.label)
+  games: number; // 그 시즌에 기록이 남은 경기 수
+}
+
+// 지표 하나의 직전/이번/발전률.
+export interface GrowthSplit {
+  prev: number | null; // 직전 시즌 경기당 평균. 직전에 안 뛰었으면 null(0이 아니다)
+  // [변경: 2026-07-28 17:00, 김병현 수정] v3.1 — number 에서 number|null 로 바뀐다.
+  // 성공률인데 이번 시즌 시도가 0회면 curr 도 값이 없다(no-attempts).
+  curr: number | null; // 이번 시즌 경기당 평균(성공률 지표는 시즌 누적 성공률). 시도 0회면 null
+  // [변경: 2026-07-28 17:00, 김병현 수정] pct 의 단위가 계열마다 다르다(결정 11) — kinds 를 보고 해석한다.
+  pct: number | null; // 발전률. 방향 반영됨(항상 클수록 좋음). 못 구하면 null
+  basis: GrowthBasis;
+}
+
+// GET /growth 의 표 한 줄 — 선수 한 명의 자격·경기 수·지표 9종 스플릿.
+export interface GrowthRow {
+  rank: number | null; // qualified && pct != null 인 행에만 1,2,3…
+  player: string;
+  prevGames: number; // 직전 시즌 출전(기록이 남은) 경기 수
+  currGames: number;
+  qualified: boolean; // 두 시즌 모두 minGames 이상
+  // [신설: 2026-07-28 17:00, 김병현 작성] v3.1 — 요청 지표의 최소 시도(AND)까지 반영된 자격 미달 사유.
+  unqualifiedBy: GrowthUnqualified;
+  isNew: boolean; // 직전 시즌 기록이 아예 없음(= prevGames === 0)
+  value: number | null; // = metrics[metric].pct (정렬에 쓴 값)
+  metrics: Record<GrowthMetric, GrowthSplit>;
+}
+
+// GET /growth?competitionId=&metric= 응답. competitionId 는 필수(없으면 400), 없는 대회면 404.
+export interface GrowthReport {
+  current: GrowthSeason;
+  previous: GrowthSeason | null; // 첫 시즌이면 null
+  metric: GrowthMetric; // 정렬에 쓴 지표
+  betterWhen: Record<GrowthMetric, 'higher' | 'lower'>; // 화면 문구용(프론트의 'tov' 하드코딩 방지)
+  // [신설: 2026-07-28 17:00, 김병현 작성] 지표별 계열(결정 11). 프론트가 'fg2Pct'/'fg3Pct' 문자열로
+  // 계열을 판단하지 않게 한다.
+  kinds: Record<GrowthMetric, GrowthKind>;
+  minGames: number; // 안내 문구용(상수 하드코딩 방지)
+  // [신설: 2026-07-28 17:00, 김병현 작성] 지표별 최소 시도(결정 12). Record 인 이유는 B4 —
+  // placeholderData 때문에 탭을 바꾸면 새 응답이 올 때까지 직전 지표의 리포트가 화면에 남는데,
+  // 스칼라면 그 찰나에 엉뚱한 지표의 숫자를 말하는 사고가 난다.
+  minAttempts: Record<GrowthMetric, number>;
+  goneCount: number; // 직전엔 뛰었지만 이번 시즌 기록이 없는 선수 수
+  tinyBaseCount: number; // 기준값이 너무 작아 발전률을 못 낸 선수 수(basis==='tiny-base'). 성공률 탭에선 구조적으로 항상 0
+  rows: GrowthRow[]; // metric 기준으로 이미 정렬돼 있음
+}

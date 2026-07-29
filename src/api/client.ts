@@ -3,6 +3,9 @@ import type {
   GameBox,
   GameConflict,
   GameSummary,
+  // [변경: 2026-07-28 15:00, 김병현 수정] 기량 발전 리포트 타입 추가.
+  GrowthMetric,
+  GrowthReport,
   LeaderboardMetric,
   LeaderboardRow,
   PlayerDetail,
@@ -210,6 +213,13 @@ export const api = {
     const q = new URLSearchParams({ player, metric });
     if (competitionId != null) q.set('competitionId', String(competitionId));
     return request<SynergyReport>(`/synergy?${q.toString()}`);
+  },
+
+  // [변경: 2026-07-28 15:00, 김병현 수정] 기량 발전 리포트 조회.
+  // competitionId 는 필수다(서버가 없으면 400). 없는 대회면 404 = 진짜 에러라 흡수하지 않는다.
+  growth: (competitionId: number, metric: GrowthMetric) => {
+    const q = new URLSearchParams({ competitionId: String(competitionId), metric });
+    return request<GrowthReport>(`/growth?${q.toString()}`);
   },
 
   // 대회 등록부: 등록된 대회 목록 (등록은 upload 가 자동으로 upsert 해서 별도 호출 없음) / 등록 해제

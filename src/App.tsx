@@ -5,6 +5,8 @@ import { ComparePage } from './pages/ComparePage';
 import { DashboardPage } from './pages/DashboardPage';
 import { GameDetailPage } from './pages/GameDetailPage';
 import { GamesPage } from './pages/GamesPage';
+// [변경: 2026-07-28 15:00, 김병현 수정] 기량 발전(직전 시즌 대비 상승률) 화면 라우트 추가.
+import { GrowthPage } from './pages/GrowthPage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
 import { PlayerDetailPage } from './pages/PlayerDetailPage';
 import { PlayersPage } from './pages/PlayersPage';
@@ -30,6 +32,8 @@ export function App() {
         <Route path="leaderboard" element={<LeaderboardPage />} />
         {/* [변경: 2026-07-27 16:14, 김병현 수정] 시너지 화면. Layout 하위라 헤더의 대회 피커를 그대로 쓴다. */}
         <Route path="synergy" element={<SynergyPage />} />
+        {/* [변경: 2026-07-28 15:00, 김병현 수정] 기량 발전 화면. Layout 하위라 헤더의 대회 피커를 그대로 쓴다. */}
+        <Route path="growth" element={<GrowthPage />} />
         {/* [변경: 2026-07-27 12:15, 김병현 수정] 업로드는 오늘 비밀번호를 맞춰야 열린다.
             JSX 는 "설명서"일 뿐이라, 게이트가 children 을 반환하기 전까지 UploadPage 는
             마운트되지 않는다 = 훅도 쿼리도 하나도 실행되지 않는다. */}

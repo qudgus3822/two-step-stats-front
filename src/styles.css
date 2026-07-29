@@ -1193,3 +1193,23 @@ h3 {
 .delta-flat {
   color: var(--muted);
 }
+
+/* ── 기량 발전 화면 ─────────────────────────────────────────── */
+/* [신설: 2026-07-28 15:00, 김병현 작성] 대부분 기존 클래스를 재사용하고, 안내 문구 2종만 더한다.
+   (.synergy-note 를 그대로 쓰지 않는 이유: 다른 기능 이름의 클래스를 빌려 쓰면 나중에
+    시너지 스타일을 고칠 때 이 화면이 같이 흔들린다.) */
+.growth-note {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+/* 헤더가 '전체 대회'라서 다른 대회 기준으로 보고 있다는 안내 배너 */
+.growth-scope-note {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--series-1);
+  background: color-mix(in srgb, var(--series-1) 8%, transparent);
+  color: var(--muted);
+  font-size: 12.5px;
+  border-radius: 6px;
+}

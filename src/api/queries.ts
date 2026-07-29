@@ -4,6 +4,9 @@ import type {
   Competition,
   GameBox,
   GameSummary,
+  // [변경: 2026-07-28 15:00, 김병현 수정] 기량 발전 훅용 타입 추가.
+  GrowthMetric,
+  GrowthReport,
   LeaderboardMetric,
   LeaderboardRow,
   PlayerDetail,
@@ -55,6 +58,12 @@ export const queryKeys = {
     all: ['synergy'] as const,
     by: (player: string | null, metric: SynergyMetric, competitionId: number | null) =>
       ['synergy', player, metric, competitionId] as const,
+  },
+  // [변경: 2026-07-28 15:00, 김병현 수정] 기량 발전 키. (대회, 지표) 둘 다 바뀌면 새 키.
+  growth: {
+    all: ['growth'] as const,
+    by: (competitionId: number | null, metric: GrowthMetric) =>
+      ['growth', competitionId, metric] as const,
   },
 };
 
@@ -142,6 +151,23 @@ export function useSynergy(
   });
 }
 
+// [변경: 2026-07-28 15:00, 김병현 수정] 기량 발전 리포트 훅. 대회가 안 정해졌으면 아예 안 부른다.
+// 같은 (대회, 지표) 로 두 번 불러도 React Query 가 키로 합쳐 요청은 1번이다
+// (이 화면은 종합 Top3 용 'eff' 와 탭용 metric 을 각각 부르는데, 기본 탭이 eff 라 보통 합쳐진다).
+export function useGrowth(
+  competitionId: number | null,
+  metric: GrowthMetric,
+): UseQueryResult<GrowthReport> {
+  return useQuery({
+    queryKey: queryKeys.growth.by(competitionId, metric),
+    // enabled 가 false 면 실행 자체를 안 하므로, 실행 시점의 competitionId 는 항상 non-null 이다.
+    queryFn: () => api.growth(competitionId as number, metric),
+    enabled: competitionId != null,
+    // 지표 탭/대회를 바꾸는 동안 옛 표를 그대로 띄워 둬서 깜빡임을 막는다(RQ v5 문법).
+    placeholderData: (prev) => prev,
+  });
+}
+
 // 업로드 후 낡는 캐시를 한 번에 정리한다(업로드 fan-out).
 // 업로드는 새 대회를 만들 수도 있어 competitions 까지 포함해 광범위하게 무효화한다.
 // append 업로드는 competitionId 가 그대로라 세부 키가 안 바뀌지만 데이터는 갈린다 →
@@ -159,5 +185,7 @@ export async function invalidateAfterUpload(queryClient: QueryClient): Promise<v
     queryClient.invalidateQueries({ queryKey: queryKeys.leaderboard.all }),
     // [변경: 2026-07-27 16:14, 김병현 수정] 시너지도 업로드로 낡는다(동료 목록·평균이 바뀔 수 있어서).
     queryClient.invalidateQueries({ queryKey: queryKeys.synergy.all }),
+    // [변경: 2026-07-28 15:00, 김병현 수정] 기량 발전도 업로드로 낡는다(경기당 평균·발전률이 바뀔 수 있어서).
+    queryClient.invalidateQueries({ queryKey: queryKeys.growth.all }),
   ]);
 }

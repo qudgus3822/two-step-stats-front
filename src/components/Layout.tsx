@@ -62,6 +62,10 @@ export function Layout() {
           <NavLink to="/synergy" className={navClass}>
             시너지
           </NavLink>
+          {/* [변경: 2026-07-28 15:00, 김병현 수정] 기량 발전(직전 시즌 대비 상승률) 탭 추가. "시너지" 다음. */}
+          <NavLink to="/growth" className={navClass}>
+            기량 발전
+          </NavLink>
         </nav>
 
         <div className="topbar-controls">
