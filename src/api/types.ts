@@ -59,6 +59,10 @@ export interface GameSummary {
   teams: TeamScore[];
   winner: string | null; // 무승부면 null
   events: number;
+  // [변경: 2026-07-29 12:10, 김병현 수정] 이 경기가 앞 경기의 '연장'인지.
+  // 목록엔 따로 한 줄로 보이지만, 평균 계산에선 앞 경기에 합쳐진다
+  // (그래서 경기 목록 줄 수 > 리더보드의 경기 수 인 게 정상이다).
+  overtime: boolean;
 }
 
 // GET /games/:id — competition 필드는 표시 라벨(=Competition.label) 문자열이다.
@@ -68,6 +72,8 @@ export interface GameBox {
   week: number;
   game: number;
   winner: string | null;
+  // [변경: 2026-07-29 12:10, 김병현 수정] 목록과 같은 연장 표시.
+  overtime: boolean;
   teams: {
     team: string;
     score: number;

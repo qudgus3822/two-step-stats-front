@@ -6,6 +6,8 @@ import { BoxScoreTable } from '../components/BoxScoreTable';
 // [변경: 2026-07-29 10:36, 김병현 수정] 스피너 → 표 모양 뼈대(TableSkeleton).
 import { Empty, ErrorView, TableSkeleton } from '../components/states';
 import { gameLabel } from '../lib/format';
+// [변경: 2026-07-29 12:10, 김병현 수정] 연장경기 표시 뱃지.
+import { OvertimeBadge } from '../components/Badge';
 import { seriesColor } from '../theme/palette';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -38,9 +40,18 @@ export function GameDetailPage() {
         // [변경: 2026-07-29 10:36, 김병현 수정] 다른 경기로 옮기는 동안 옛 스코어보드·표를 흐리게 유지.
         <div className={stale ? 'is-stale' : ''} aria-busy={stale}>
           <div className="page-head">
-            <h1 className="page-title">{gameLabel(data.week, data.game)}</h1>
+            <h1 className="page-title">
+              {gameLabel(data.week, data.game)}
+              {/* [변경: 2026-07-29 12:10, 김병현 수정] 연장경기면 제목 옆에 표시. */}
+              {data.overtime && <OvertimeBadge />}
+            </h1>
             {/* [변경: 2026-07-14 17:32, 김병현 수정] data.season(문자열) → data.competition(대회 라벨) */}
-            <p className="page-sub">{data.competition}</p>
+            <p className="page-sub">
+              {data.competition}
+              {/* [변경: 2026-07-29 12:10, 김병현 수정] 왜 따로 보이는지 한 줄로 설명.
+                  이 화면엔 연장만의 박스스코어가 뜨는데, 선수 평균은 앞 경기와 합쳐 계산된다. */}
+              {data.overtime && ' · 앞 경기의 연장이에요 (평균 계산은 앞 경기와 한 경기로)'}
+            </p>
           </div>
 
           {/* 최종 스코어보드 */}

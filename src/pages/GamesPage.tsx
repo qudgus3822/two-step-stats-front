@@ -7,6 +7,8 @@ import { useCompetition } from '../context/CompetitionContext';
 import type { GameSummary } from '../api/types';
 import { Empty, ErrorView, Loading } from '../components/states';
 import { gameLabel } from '../lib/format';
+// [변경: 2026-07-29 12:10, 김병현 수정] 연장경기 표시 뱃지.
+import { OvertimeBadge } from '../components/Badge';
 
 // 경기 목록: 대회 안의 모든 경기를 점수/승패와 함께 카드로 나열. 누르면 박스스코어로.
 
@@ -48,7 +50,13 @@ function GameRow({ game }: { game: GameSummary }) {
   return (
     <Link className="game-row card" to={`/games/${encodeURIComponent(game.id)}`}>
       <div className="game-when">
-        <span className="game-week">{gameLabel(game.week, game.game)}</span>
+        <span className="game-week">
+          {gameLabel(game.week, game.game)}
+          {/* [변경: 2026-07-29 12:10, 김병현 수정] 연장은 목록에 따로 한 줄로 나오되 표시를 단다.
+              평균 계산에선 앞 경기에 합쳐지므로, 표시가 없으면 "목록 3경기 vs 리더보드 2경기"가
+              버그로 보인다. */}
+          {game.overtime && <OvertimeBadge />}
+        </span>
         {/* [변경: 2026-07-14 17:32, 김병현 수정] game.season(문자열) → game.competition(대회 라벨) */}
         <span className="game-season">{game.competition}</span>
       </div>

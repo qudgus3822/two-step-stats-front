@@ -216,8 +216,12 @@ const pctText = (p: number | null) => (p == null ? '—' : `${p}%`);
 // 예: "봄 · 3주 2경기 · A 58 : B 52"
 // [변경: 2026-07-14 17:32, 김병현 수정] 시그니처 season:string → competitionId:number|null.
 // g.competition(대회 표시 라벨)은 값 그대로 붙이고, "전체"인지 판단은 competitionId 로 한다.
+// [변경: 2026-07-29 12:10, 김병현 수정] 연장경기면 "(연장)"을 붙인다.
+// 드롭다운은 <option> 이라 뱃지(JSX)를 못 넣으므로 글자로 표시한다. 안 붙이면 "3주 2경기"와
+// "3주 3경기"가 나란히 떠서 왜 하나가 유난히 짧은지 알 수가 없다.
 function optionLabel(g: GameSummary, competitionId: number | null): string {
   const head = competitionId == null ? `${g.competition} · ` : '';
   const score = g.teams.map((t) => `${t.team} ${t.score}`).join(' : ');
-  return `${head}${gameLabel(g.week, g.game)}${score ? ` · ${score}` : ''}`;
+  const tail = g.overtime ? ' (연장)' : '';
+  return `${head}${gameLabel(g.week, g.game)}${tail}${score ? ` · ${score}` : ''}`;
 }

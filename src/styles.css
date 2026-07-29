@@ -358,6 +358,16 @@ h3 {
   background: color-mix(in srgb, var(--text) 8%, transparent);
   color: var(--text-2);
 }
+/* [신설: 2026-07-29 12:10, 김병현 작성] 연장경기 표시.
+   승/패(성적)와 헷갈리지 않게 채움 대신 테두리만 쓴다 — "부가 정보"라는 인상.
+   색은 시리즈 5(보라) — 승/패/무의 초록·빨강·노랑과 안 겹쳐서 성적으로 오해되지 않는다.
+   라이트/다크 양쪽에 --series-5 가 정의돼 있어 테마를 따라간다. */
+.badge--overtime {
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--series-5) 45%, transparent);
+  color: var(--series-5);
+  padding: 1px 8px;
+}
 .badge-dot {
   width: 8px;
   height: 8px;
