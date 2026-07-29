@@ -190,11 +190,18 @@ export interface GameConflict {
   game: number;
   existingCount: number;
 }
+// [신설: 2026-07-29 22:15, 김병현 작성] 처음 보는 선수 이름 한 명(서버 types.ts 의 NewPlayer 미러).
+export interface NewPlayer {
+  name: string; // 저장될 값 그대로(서버가 공백 제거해 정규화한 값)
+  suggestions: string[]; // 비슷한 기존 이름(최대 3개). 없으면 빈 배열
+}
 export interface UploadConflictBody {
   conflict: true;
   competitionId: number;
   competition: string;
   games: GameConflict[];
+  // [변경: 2026-07-29 22:15, 김병현 수정] ⚠ games 가 빈 배열인 409 가 생겼다(이름만 걸린 경우).
+  newPlayers: NewPlayer[];
   message: string;
 }
 

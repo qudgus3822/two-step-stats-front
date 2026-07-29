@@ -15,9 +15,11 @@ import { api, UploadConflictError } from '../api/client';
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — useSeason → useCompetition(리네임).
 // 대회 목록은 이제 전역 컨텍스트가 들고 있어서(등록/새로고침 공유), 이 화면이 따로 fetch 하지 않는다.
 import { useCompetition } from '../context/CompetitionContext';
-import type { Competition, GameConflict, UploadResult } from '../api/types';
+// [변경: 2026-07-29 22:40, 김병현 수정] 409 에 '처음 보는 이름'이 같이 실려 온다.
+import type { Competition, GameConflict, NewPlayer, UploadResult } from '../api/types';
 import { ErrorView, Loading } from '../components/states';
-import { OverwriteConfirmModal } from '../components/OverwriteConfirmModal';
+// [변경: 2026-07-29 22:40, 김병현 수정] OverwriteConfirmModal → UploadConfirmModal 로 이름 변경.
+import { UploadConfirmModal } from '../components/UploadConfirmModal';
 
 // 기록지 엑셀 업로드 화면.
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — 업로드할 엑셀은 여전히 6컬럼
@@ -81,9 +83,12 @@ export function UploadPage() {
   // [변경: 2026-07-15 10:28, 김병현 수정] uploading/uploadError/result 제거 → uploadMutation 상태로 대체.
   const fileInputRef = useRef<HTMLInputElement>(null);
   // [변경: 2026-07-15 14:10, 김병현 수정] 409(중복 경기) 응답을 받으면 여기에 담아 확인 모달을 띄운다.
-  const [conflict, setConflict] = useState<{ competition: string; games: GameConflict[] } | null>(
-    null,
-  );
+  // [변경: 2026-07-29 22:40, 김병현 수정] 409 에 '처음 보는 이름'이 같이 실려 온다.
+  const [conflict, setConflict] = useState<{
+    competition: string;
+    games: GameConflict[];
+    newPlayers: NewPlayer[];
+  } | null>(null);
 
   // 업로드 뮤테이션: 파일+대회정보 → 서버 upsert+적재. 성공 시 광범위 무효화 후 방금 올린 대회로 이동.
   // [변경: 2026-07-15 10:28, 김병현 수정] useApi 대신 React Query useMutation. force 는 409(중복 경기)
@@ -108,7 +113,7 @@ export function UploadPage() {
     // (기존 try/catch 의 "UploadConflictError 면 모달, 아니면 uploadError" 상호배타 분기를 그대로 옮김).
     onError: (err) => {
       if (err instanceof UploadConflictError) {
-        setConflict({ competition: err.competition, games: err.conflicts });
+        setConflict({ competition: err.competition, games: err.games, newPlayers: err.newPlayers });
       }
     },
   });
@@ -390,10 +395,12 @@ export function UploadPage() {
 
       {/* [변경: 2026-07-15 14:10, 김병현 수정] 409(중복 경기) → 덮어쓰기 확인 모달.
           취소는 setConflict(null) 만 — 파일/대회 선택은 그대로 두고(에러 아님) 모달만 닫는다. */}
+      {/* [변경: 2026-07-29 22:40, 김병현 수정] OverwriteConfirmModal → UploadConfirmModal, newPlayers 추가. */}
       {conflict && (
-        <OverwriteConfirmModal
+        <UploadConfirmModal
           competition={conflict.competition}
-          conflicts={conflict.games}
+          games={conflict.games}
+          newPlayers={conflict.newPlayers}
           // [변경: 2026-07-15 10:28, 김병현 수정] uploading → uploadMutation.isPending
           busy={uploadMutation.isPending}
           onConfirm={() => performUpload(true)}
