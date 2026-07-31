@@ -172,6 +172,15 @@ export interface ParseWarning {
   message: string; // 사람이 읽는 설명
 }
 
+// [신설: 2026-07-31 15:03, 김병현 작성] 한글로 친 코드를 자동 인식한 결과(서버 types.ts 의 HangulCodeFix 미러).
+export interface HangulCodeFix {
+  // [주의] 파일에 있던 글자 그대로가 아니라 '되돌리기에 넣은 값'이다(앞뒤 공백 제거 + 영문 대문자화).
+  //   예) 파일 셀 '  2fㅁ  ' -> from '2Fㅁ'. 한글 부분은 파일과 글자 그대로 같다.
+  from: string;
+  to: string; // 되돌려 인식한 코드 (예: 2FA)
+  count: number; // 그렇게 읽은 행 수
+}
+
 // POST /upload 응답: 엑셀 파싱 → 대회 upsert → DB 적재 결과
 export interface UploadResult {
   ok: boolean;
@@ -181,6 +190,8 @@ export interface UploadResult {
   mode: 'replace' | 'append'; // 교체 적재 / 증분 추가
   imported: number; // 적재된 이벤트(스탯) 행 수
   unknownCodes: string[]; // 사전에 없는 스텟 코드 목록(오타 의심)
+  // [신설: 2026-07-31 15:03, 김병현 작성] 한글로 친 코드를 되돌려 인식한 결과. 없으면 빈 배열.
+  hangulCodes: HangulCodeFix[];
   warnings: ParseWarning[]; // 행 단위 경고 목록
 }
 

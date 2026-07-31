@@ -1010,6 +1010,26 @@ h3 {
   background: color-mix(in srgb, var(--draw) 25%, transparent);
   color: color-mix(in srgb, var(--draw) 72%, var(--text));
 }
+/* [신설: 2026-07-31 15:04, 김병현 작성] "한글 코드 자동 인식" 알림 블록.
+   .upload-warn 과 구조(레이아웃)는 같고 색과 농도는 다르다 — '문제'가 아니라 '처리했어요'라서
+   노랑(--draw)이 아닌 파랑(--series-1)을 쓴다. 같은 노랑이면 진짜 경고(미등록 코드)와 구분이 안 된다.
+   농도(10%/20%/70%)를 경고(12%/25%/72%)와 따로 정한 이유는 아래 대비 계산 때문이다. */
+.upload-info {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--series-1) 10%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.code-chip--info {
+  background: color-mix(in srgb, var(--series-1) 20%, transparent);
+  /* 70%: 라이트 4.92 / 다크 4.97 로 WCAG AA(4.5) 통과. 78% 로 올리면 4.29 / 4.45 로 떨어진다.
+     칩 글자는 12px·650 이라 '큰 글자' 완화(3:1)가 아니라 4.5 기준이 그대로 적용된다.
+     (계획서 §5-3 기준 sRGB 상대휘도 계산 결과) */
+  color: color-mix(in srgb, var(--series-1) 70%, var(--text));
+}
 .upload-warn-detail {
   margin-top: 12px;
   font-size: 13px;

@@ -422,6 +422,17 @@ function UploadResultCard({
   const WARN_PREVIEW = 50; // 경고가 많으면 앞에서 이만큼만 미리보기
   const hasUnknown = result.unknownCodes.length > 0;
   const hasWarnings = result.warnings.length > 0;
+  // [신설: 2026-07-31 15:03, 김병현 작성] 한글로 친 코드를 자동 인식한 게 있으면 알려 준다.
+  // ?? [] 인 이유: 타입은 필수 필드지만, 옛 서버 응답(캐시·배포 중 롤백·프록시가 물고 있던 응답)이
+  //   섞이면 undefined 가 온다. 그때 .length 로 터지면 업로드는 됐는데 결과 카드가 통째로 하얘진다.
+  //   위험이 낮다는 게 방어를 안 할 이유는 못 된다 — 글자 세 개로 0 이 된다.
+  // 자르지 않는 이유: 되돌려서 코드가 될 수 있는 한글 조합은 이론상 최대 41가지뿐이다(전수 확인함).
+  const hangulFixes = result.hangulCodes ?? [];
+  const hangulRows = hangulFixes.reduce((sum, h) => sum + h.count, 0);
+  // [신설: 2026-07-31 15:03, 김병현 작성] '스틸 자모가 턴오버로 읽힌다'는 주의는 T 로 읽은 게 있을 때만 띄운다.
+  // 상관없는 주의를 매번 보여 주면 무뎌져서 정작 필요할 때 안 읽는다
+  // (이 블록을 경고(warnings)와 따로 둔 것과 같은 이유다).
+  const hasTurnover = hangulFixes.some((h) => h.to === 'T');
 
   return (
     <div className="card upload-result">
@@ -439,6 +450,28 @@ function UploadResultCard({
           </p>
         </div>
       </div>
+
+      {hangulFixes.length > 0 && (
+        <div className="upload-info">
+          <strong>
+            한글로 입력된 코드 {hangulFixes.length}종 {hangulRows.toLocaleString()}건을 자동 인식했어요
+          </strong>
+          <div className="code-chips">
+            {hangulFixes.map((h) => (
+              <span key={h.from} className="code-chip code-chip--info">
+                {h.from} → {h.to} · {h.count.toLocaleString()}건
+              </span>
+            ))}
+          </div>
+          <span className="field-hint">
+            한영 전환을 깜빡하고 친 것으로 보여, 자판을 되돌려 읽었어요. <b>위 목록이 기록지에 적은 뜻과
+            같은지 한 번만 봐 주세요.</b>
+            {hasTurnover && (
+              <> 특히 스틸 뜻으로 적은 <code>ㅅ</code> 은 턴오버(<code>T</code>)로 읽힙니다.</>
+            )}
+          </span>
+        </div>
+      )}
 
       {hasUnknown && (
         <div className="upload-warn">
