@@ -952,6 +952,23 @@ h3 {
   margin-top: 16px;
 }
 
+/* [신설: 2026-08-25 16:40, 김병현 작성] 원본 데이터 내려받기 카드의 조작부.
+   '대회 고르기'(select)와 '내려받기'(button)를 한 줄에 놓는다. align-items:flex-end 인 이유:
+   select 위엔 라벨('대회')이 한 줄 얹혀 있어서, 가운데 정렬하면 버튼이 라벨 높이만큼 떠 보인다.
+   아래(밑변)를 맞춰야 select 와 버튼이 같은 줄에 있는 것처럼 보인다.
+   좁은 화면에선 wrap 으로 두 줄이 되고, 그때 select 가 남는 폭을 차지한다(min-width 로 안 찌그러짐). */
+.export-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+.export-controls .season-field {
+  flex: 1 1 220px;
+  min-width: 200px;
+}
+
 /* 기본(주요) 버튼 */
 .btn--primary {
   background: var(--series-1);

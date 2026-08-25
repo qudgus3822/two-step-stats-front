@@ -1,3 +1,5 @@
+// [신설: 2026-08-25 16:40, 김병현 작성] 응답 헤더에서 파일 이름 꺼내기(저장은 화면 쪽에서).
+import { fileNameFromHeader } from '../lib/download';
 import type {
   Competition,
   GameBox,
@@ -12,6 +14,8 @@ import type {
   NewPlayer,
   PlayerDetail,
   PlayerListItem,
+  // [신설: 2026-08-25 16:40, 김병현 작성] 원본 데이터 내려받기 결과.
+  RawDataDownload,
   Summary,
   // [변경: 2026-07-27 16:14, 김병현 수정] 시너지 리포트 타입 추가.
   SynergyMetric,
@@ -173,6 +177,38 @@ async function uploadWorkbook(
   return res.json() as Promise<UploadResult>;
 }
 
+// [신설: 2026-08-25 16:40, 김병현 작성] 원본(rawdata) 데이터 내려받기. 업로드의 반대 방향이다.
+//
+// 왜 <a href> 링크 한 줄로 안 하나: 링크로 받으면 실패가 안 보인다. 서버가 꺼져 있거나
+// 404 여도 브라우저는 조용히 아무 일도 안 하거나 에러 페이지를 파일로 저장해 버린다.
+// fetch 로 받으면 다른 호출들과 똑같이 실패를 잡아 화면에 문구로 띄울 수 있다.
+//
+// 파일 이름과 행 수는 본문이 아니라 헤더에 있다. 이 헤더들이 브라우저 JS 에 보이려면
+// 서버 CORS 에 exposedHeaders 가 켜져 있어야 한다(api/src/main.ts). 꺼져 있으면
+// 에러 없이 이름만 조용히 예비값으로 떨어지므로, 여기 예비값은 "그래도 뭔가는 저장된다"용이다.
+async function downloadRawData(competitionId?: number | null): Promise<RawDataDownload> {
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}/export${competitionQuery(competitionId)}`);
+  } catch {
+    throw new Error(
+      `API 서버에 연결하지 못했습니다 (${BASE}). NestJS 서버가 켜져 있는지 확인하세요.`,
+    );
+  }
+  // 실패 응답의 본문은 엑셀이 아니라 JSON 에러다 → 다른 호출과 같은 방식으로 메시지를 뽑는다.
+  if (!res.ok) await failure(res, `내려받기 실패 (HTTP ${res.status})`);
+
+  const blob = await res.blob();
+  const fileName =
+    fileNameFromHeader(res.headers.get('Content-Disposition')) ?? 'rawdata.xlsx';
+  // 헤더가 없으면 null 이다 — 0 으로 뭉개면 화면이 "0행 받았어요"라는 거짓말을 한다.
+  const rawCount = res.headers.get('X-Rawdata-Rows');
+  const parsedCount = rawCount != null ? Number(rawCount) : NaN;
+  const rowCount = Number.isFinite(parsedCount) ? parsedCount : null;
+
+  return { blob, fileName, rowCount };
+}
+
 export const api = {
   health: () => request<{ ok: boolean }>('/health'),
 
@@ -231,6 +267,11 @@ export const api = {
     const q = new URLSearchParams({ competitionId: String(competitionId), metric });
     return request<GrowthReport>(`/growth?${q.toString()}`);
   },
+
+  // [신설: 2026-08-25 16:40, 김병현 작성] 원본(rawdata) 양식 그대로 내려받기.
+  // competitionId 를 주면 그 대회만, 생략(또는 null)하면 전체 대회를 한 파일에 담는다.
+  // 받은 blob 을 실제로 저장시키는 건 화면 몫이다(lib/download.ts 의 saveBlob).
+  exportRawData: (competitionId?: number | null) => downloadRawData(competitionId),
 
   // 대회 등록부: 등록된 대회 목록 (등록은 upload 가 자동으로 upsert 해서 별도 호출 없음) / 등록 해제
   competitions: () => request<Competition[]>('/competitions'),

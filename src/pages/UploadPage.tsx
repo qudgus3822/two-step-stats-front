@@ -20,6 +20,8 @@ import type { Competition, GameConflict, NewPlayer, UploadResult } from '../api/
 import { ErrorView, Loading } from '../components/states';
 // [변경: 2026-07-29 15:34, 김병현 수정] OverwriteConfirmModal → UploadConfirmModal 로 이름 변경.
 import { UploadConfirmModal } from '../components/UploadConfirmModal';
+// [변경: 2026-08-25 16:40, 김병현 수정] 원본 데이터 내려받기 카드(업로드의 반대 방향).
+import { RawDataExportCard } from '../components/RawDataExportCard';
 
 // 기록지 엑셀 업로드 화면.
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — 업로드할 엑셀은 여전히 6컬럼
@@ -392,6 +394,11 @@ export function UploadPage() {
       {/* [변경: 2026-07-27 11:24, 김병현 수정] 성공 시 곧바로 대시보드로 이동하므로 이 카드는
           사실상 안 보인다(이동 전 찰나의 렌더 대비 안전망으로만 유지). */}
       {result && <UploadResultCard result={result} onReset={resetFile} />}
+
+      {/* 3) 원본 데이터 내려받기 — 업로드의 반대 방향.
+          업로드 폼 아래에 두는 이유: 이 화면에 온 사람의 주 목적은 '올리기'라,
+          내려받기가 위에 있으면 매번 지나쳐야 한다. */}
+      <RawDataExportCard />
 
       {/* [변경: 2026-07-15 14:10, 김병현 수정] 409(중복 경기) → 덮어쓰기 확인 모달.
           취소는 setConflict(null) 만 — 파일/대회 선택은 그대로 두고(에러 아님) 모달만 닫는다. */}

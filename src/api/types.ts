@@ -343,3 +343,12 @@ export interface GrowthReport {
   tinyBaseCount: number; // 기준값이 너무 작아 발전률을 못 낸 선수 수(basis==='tiny-base'). 성공률 탭에선 구조적으로 항상 0
   rows: GrowthRow[]; // metric 기준으로 이미 정렬돼 있음
 }
+
+// [신설: 2026-08-25 16:40, 김병현 작성] 원본(rawdata) 데이터 내려받기 결과.
+// 서버 JSON 을 미러한 게 아니다 — 응답 '본문'은 엑셀 바이트고, 이름·행수는 '헤더'에 실려 온다.
+// 그 둘을 화면이 쓰기 좋게 한 덩이로 묶은 모양이다.
+export interface RawDataDownload {
+  blob: Blob; // .xlsx 파일 내용
+  fileName: string; // 서버가 지은 이름 (예: 'rawdata_2023 시즌1 · 나이배_20260825.xlsx')
+  rowCount: number | null; // 내보낸 행 수. 헤더를 못 읽었으면 null(= "모름", 0 과 구분)
+}
