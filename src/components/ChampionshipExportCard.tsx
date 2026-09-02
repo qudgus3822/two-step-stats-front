@@ -46,8 +46,10 @@ export function ChampionshipExportCard() {
 
       {exportMutation.error && <ErrorView message={exportMutation.error.message} />}
 
+      {/* [변경: 2026-09-02 19:45, 김병현 수정] 옛 .upload-info(series-1 10%) → bg-info-soft
+          (계획서 §5-5 "정보 → Alert + bg-info-soft"). */}
       {result && !exportMutation.isPending && (
-        <Alert className="mt-3.5 border-l-[3px] border-l-primary" aria-live="polite">
+        <Alert className="mt-3.5 border-info-soft bg-info-soft" aria-live="polite">
           <AlertTitle>
             내려받았어요
             {/* rowCount 가 null 이면 "모름"이다 — 0 으로 뭉개서 "0건"이라 거짓말하지 않는다. */}

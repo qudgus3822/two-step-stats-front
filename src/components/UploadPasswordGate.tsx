@@ -1,4 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+// [변경: 2026-09-02 19:40, 김병현 수정] 아래 4줄 — 계획서 §7 Phase 4g.
+// .page* → PageHeader, .card.upload-card(form) → Card+CardContent,
+// .field/.field-label+label 이 input 감싸는 구조 → FieldLabel htmlFor + Input id
+// (힌트/오류가 접근성 이름에 안 섞이는 성질은 그대로 지킨다), .btn.btn--primary → Button.
+import { PageHeader } from './PageHeader';
+import { Card, CardContent } from './ui/card';
+import { Field, FieldDescription, FieldLabel } from './ui/field';
+import { Button } from './ui/button';
 
 // [변경: 2026-07-27 12:15, 김병현 수정] 업로드 화면 프론트 전용 비밀번호 잠금 신설.
 // 무엇을 하나: /upload 앞에 세우는 "커튼". 오늘 비밀번호가 맞아야 children(UploadPage)을 렌더한다.
@@ -30,6 +38,8 @@ const ERROR_ID = 'upload-gate-error';
 // [변경: 2026-07-27 12:15, 김병현 수정] 상시 힌트도 고유 id 를 가져서 입력칸의 aria-describedby 로
 // 연결한다(리뷰 N1) — 안 그러면 autoFocus 로 입력칸에 포커스가 가도 스크린리더가 예방 힌트를 안 읽는다.
 const HINT_ID = 'upload-gate-hint';
+// [신설: 2026-09-02 19:40, 김병현 작성] FieldLabel htmlFor / Input id 연결용.
+const PASSWORD_INPUT_ID = 'upload-gate-password';
 
 // 오늘의 비밀번호 = 접두어 + 월(2자리) + 일(2자리). 예: 7월 27일 → xntmxpq0727.
 // 주의 1: getMonth() 는 0부터 세므로 +1 (7월이 6으로 나온다).
@@ -115,66 +125,75 @@ export function UploadPasswordGate({ children }: UploadPasswordGateProps) {
   }
 
   return (
-    <div className="page">
-      <div className="page-head">
-        <h1 className="page-title">업로드는 잠겨 있어요</h1>
-        <p className="page-sub">운영자용 비밀번호를 입력하면 기록지 업로드 화면이 열려요.</p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="업로드는 잠겨 있어요"
+        sub="운영자용 비밀번호를 입력하면 기록지 업로드 화면이 열려요."
+      />
 
-      <form className="card upload-card" onSubmit={handleSubmit}>
-        {/* [변경: 2026-07-27 12:27, 김병현 수정] 3차 구현 리뷰 감점 1 반영 — 힌트/오류 span 을
-            label 밖으로 빼고 <div className="field"> 로 다시 감쌌다(N2 는 유지하되 위치만 수정).
-            이유: label 이 컨트롤을 감싸면 서브트리의 모든 텍스트가 그 컨트롤의 접근성 이름이 된다.
-            힌트·오류까지 label 안에 있으면 이름이 "비밀번호 영문 입력 상태(한/영)에서…" 처럼
-            오염되고, 오류가 뜨면 이름이 실시간으로 또 바뀐다(ARIA 는 이름이 안정적이길 요구).
-            label 은 예전처럼 field-label 텍스트 + input 만 감싼다 → 이름은 다시 "비밀번호" 로 고정.
-            바깥 div 에 .field 를 다시 씀으로써(같은 클래스 재사용, 새 CSS 0줄) label·힌트·오류
-            세 덩어리가 세로 flex(gap 6px)로 줄 분리되는 건 그대로 유지된다. */}
-        <div className="field">
-          {/* label 이 input 을 감싸서 자동 연결된다(기존 .field 패턴 그대로, UploadPage.tsx 와 동일). */}
-          <label className="field">
-            <span className="field-label">비밀번호</span>
-            <input
-              ref={inputRef}
-              className="search"
-              type="password"
-              name="uploadCode"
-              // 매일 바뀌는 공용 코드라 "저장할 자격증명"이 아니다. current-password 로 두면 브라우저가
-              // 저장을 권하고 다음 날 어제 값을 자동완성해 버린다(칸이 가려져 원인도 안 보임).
-              autoComplete="one-time-code"
-              autoFocus
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                if (error) setError(null); // 다시 치기 시작하면 빨간 문구는 치운다
-              }}
-              aria-invalid={error != null}
-              // [변경: 2026-07-27 12:15, 김병현 수정] 상시 힌트를 항상 연결하고, 오류가 있을 때는
-              // 오류 문구까지 같이 읽히도록 두 id 를 이어붙인다(리뷰 N1). label 밖으로 옮긴 뒤에도
-              // id 참조라 연결에는 영향 없다.
-              aria-describedby={error ? `${HINT_ID} ${ERROR_ID}` : HINT_ID}
-            />
-          </label>
+      <Card className="max-w-[660px]">
+        <CardContent>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {/* [변경: 2026-09-02 19:40, 김병현 수정] 3차 구현 리뷰 감점 1 반영 — 힌트/오류가
+                label(접근성 이름) 안에 섞이면 안 된다는 원칙은 그대로 지킨다. 예전엔 label 이
+                input 을 통째로 감싸 해결했는데(N2), 지금은 FieldLabel htmlFor + Input id 로
+                연결한다 — label 이 input 을 감싸지 않으므로 힌트·오류가 형제로 있어도
+                애초에 label 의 서브트리에 들어가지 않는다(계획서 §7 Phase 4g 지시). */}
+            <Field>
+              <FieldLabel htmlFor={PASSWORD_INPUT_ID}>비밀번호</FieldLabel>
+              {/* [변경: 2026-09-02 20:00, 김병현 수정] ⚠ 실측으로 잡은 버그(Playwright) —
+                  ui/input.tsx 의 Input 도 button.tsx 처럼 React.forwardRef 가 없는 일반
+                  함수 컴포넌트다. ref={inputRef} 를 그대로 주면 ref 가 실제 <input> DOM 에
+                  안 붙어서(React 가 함수 컴포넌트엔 ref prop 을 그냥 버린다) 오답 제출 후
+                  "다시 칠 수 있게 포커스 이동" 이 조용히 죽는다(콘솔 경고만 뜨고 동작이 깨짐 —
+                  Phase 2 의 Button forwardRef 함정과 같은 종류, 대상만 Input). 벤더 코드는
+                  안 건드리고, ref 가 필요한 이 자리만 Input 의 클래스를 그대로 옮긴 순수
+                  <input> 을 써서 우회한다(계획서 §9-7 사상과 동일한 우회 원칙 적용). */}
+              <input
+                ref={inputRef}
+                data-slot="input"
+                id={PASSWORD_INPUT_ID}
+                className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40"
+                type="password"
+                name="uploadCode"
+                // 매일 바뀌는 공용 코드라 "저장할 자격증명"이 아니다. current-password 로 두면 브라우저가
+                // 저장을 권하고 다음 날 어제 값을 자동완성해 버린다(칸이 가려져 원인도 안 보임).
+                autoComplete="one-time-code"
+                autoFocus
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (error) setError(null); // 다시 치기 시작하면 빨간 문구는 치운다
+                }}
+                aria-invalid={error != null}
+                // [변경: 2026-07-27 12:15, 김병현 수정] 상시 힌트를 항상 연결하고, 오류가 있을 때는
+                // 오류 문구까지 같이 읽히도록 두 id 를 이어붙인다(리뷰 N1).
+                aria-describedby={error ? `${HINT_ID} ${ERROR_ID}` : HINT_ID}
+              />
 
-          {/* 한/영 예방 힌트(항상 보임). 규칙은 안 흘린다 — "영문 상태"라고만 말한다. */}
-          <span id={HINT_ID} className="field-hint">
-            영문 입력 상태(한/영)에서 입력해 주세요.
-          </span>
+              {/* 한/영 예방 힌트(항상 보임). 규칙은 안 흘린다 — "영문 상태"라고만 말한다. */}
+              <FieldDescription id={HINT_ID}>영문 입력 상태(한/영)에서 입력해 주세요.</FieldDescription>
 
-          {error && (
-            <span id={ERROR_ID} className="field-hint field-hint--warn" role="alert">
-              {error}
-            </span>
-          )}
-        </div>
+              {/* [변경: 2026-09-02 19:40, 김병현 수정] 옛 .field-hint--warn 은 --draw(경고) 톤이지
+                  --destructive(loss/빨강) 가 아니다 — text-warning-foreground 가 정확한 대응. */}
+              {error && (
+                <FieldDescription id={ERROR_ID} role="alert" className="text-warning-foreground">
+                  {error}
+                </FieldDescription>
+              )}
+            </Field>
 
-        <div className="upload-actions">
-          <button type="submit" className="btn btn--primary" disabled={!password.trim()}>
-            잠금 해제
-          </button>
-          <span className="field-hint">이 브라우저 탭을 닫기 전까지는 다시 묻지 않아요.</span>
-        </div>
-      </form>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Button type="submit" disabled={!password.trim()}>
+                잠금 해제
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                이 브라우저 탭을 닫기 전까지는 다시 묻지 않아요.
+              </span>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

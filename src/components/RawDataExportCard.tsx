@@ -4,6 +4,15 @@ import { api } from '../api/client';
 import { useCompetition } from '../context/CompetitionContext';
 import { saveBlob } from '../lib/download';
 import { ErrorView } from './states';
+// [변경: 2026-09-02 19:45, 김병현 수정] 아래 4줄 — 계획서 §7 Phase 4g.
+// .card.upload-card → SectionCard, .field.season-field+.select → NativeSelect,
+// .field-hint → text-xs text-muted-foreground, 성공 안내(.upload-info) → Alert,
+// .btn.btn--primary → Button. .warn-list/p.field-hint preflight 보정은 이 파일이
+// field-hint 를 마지막으로 떠나는 지점이라 삭제한다(계획서 §D6-1 P2, styles.css 에서 처리).
+import { SectionCard } from './SectionCard';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Button } from './ui/button';
+import { NativeSelect, NativeSelectOption } from './ui/native-select';
 
 // [신설: 2026-08-25 16:40, 김병현 작성] 원본(rawdata) 데이터 내려받기 카드.
 //
@@ -38,71 +47,69 @@ export function RawDataExportCard() {
   const result = exportMutation.data ?? null;
 
   return (
-    <section className="card upload-card">
-      <div className="card-head">
-        <h2 className="card-title">원본 데이터 내려받기</h2>
-        <span className="card-note">
+    <SectionCard
+      title="원본 데이터 내려받기"
+      note={
+        <>
           받을 범위: <b>{scopeLabel}</b>
-        </span>
-      </div>
-
-      <p className="field-hint">
+        </>
+      }
+      className="max-w-[660px]"
+    >
+      <p className="text-xs text-muted-foreground">
         저장된 기록을 기록지 원본과 <b>똑같은 12칸 양식</b>(연도·시즌·주차·경기·쿼터·선수·스텟·팀명·
         팀index·활동여부·주차인덱스·득점)으로 내려받아요. 받은 파일은 그대로 다시 올릴 수도 있어요.
       </p>
 
-      <div className="export-controls">
-        <label className="field season-field">
-          <span className="field-label">대회</span>
-          <select
-            className="select"
+      <div className="mt-3.5 flex flex-wrap items-end gap-2.5">
+        <label className="flex flex-col gap-1.5 text-sm">
+          <span className="font-medium">대회</span>
+          <NativeSelect
             value={scope}
             onChange={(e) => setScope(e.target.value)}
             disabled={exportMutation.isPending}
             aria-label="내려받을 대회 선택"
           >
-            <option value={ALL_SCOPE}>전체 대회 (한 파일)</option>
+            <NativeSelectOption value={ALL_SCOPE}>전체 대회 (한 파일)</NativeSelectOption>
             {competitions.map((c) => (
-              <option key={c.id} value={String(c.id)}>
+              <NativeSelectOption key={c.id} value={String(c.id)}>
                 {c.label}
-              </option>
+              </NativeSelectOption>
             ))}
-          </select>
+          </NativeSelect>
         </label>
 
-        <button
+        <Button
           type="button"
-          className="btn btn--primary"
           onClick={() => exportMutation.mutate()}
           disabled={exportMutation.isPending || competitionsLoading}
         >
           {exportMutation.isPending ? '만드는 중…' : '.xlsx 로 내려받기'}
-        </button>
+        </Button>
       </div>
 
       {/* 전체 내려받기는 7만 행 넘는 파일이 나온다 — 눌러 놓고 멈춘 줄 알 수 있어서 미리 알린다. */}
-      <span className="field-hint">
+      <p className="mt-2 text-xs text-muted-foreground">
         {competitionId == null
           ? '전체 대회는 파일이 커서(수만 행) 만드는 데 몇 초 걸릴 수 있어요.'
           : '팀index·활동여부 칸은 저장되는 값이 아니라 빈칸으로 나가요.'}
-      </span>
+      </p>
 
-      {exportMutation.error && (
-        <div className="upload-feedback">
-          <ErrorView message={exportMutation.error.message} />
-        </div>
-      )}
+      {exportMutation.error && <ErrorView message={exportMutation.error.message} />}
 
+      {/* [변경: 2026-09-02 19:45, 김병현 수정] 옛 .upload-info(series-1 10%) → bg-info-soft.
+          plan §5-5: "정보 → Alert + bg-info-soft" — growth-scope-note 의 좌측 강조선과는
+          다른 패턴이다(그건 border-l 계열, 이건 배경 채움 계열). */}
       {result && !exportMutation.isPending && (
-        <div className="upload-info" aria-live="polite">
-          <strong>
+        <Alert className="mt-3.5 border-info-soft bg-info-soft" aria-live="polite">
+          <AlertTitle>
             내려받았어요
             {/* rowCount 가 null 이면 "모름"이다 — 0 으로 뭉개서 "0행"이라고 거짓말하지 않는다. */}
             {result.rowCount != null && ` · ${result.rowCount.toLocaleString()}행`}
-          </strong>
-          <span className="field-hint">{result.fileName}</span>
-        </div>
+          </AlertTitle>
+          <AlertDescription>{result.fileName}</AlertDescription>
+        </Alert>
       )}
-    </section>
+    </SectionCard>
   );
 }
