@@ -129,9 +129,8 @@ h3 {
   flex-wrap: wrap;
 }
 
-.breadcrumb {
-  margin-bottom: 14px;
-}
+/* [삭제: 2026-09-02 19:10, 김병현 수정] .breadcrumb — GameDetailPage.tsx·PlayerDetailPage.tsx
+   가 shadcn Breadcrumb 로 이전 완료(계획서 §7 Phase 4d·4e). */
 
 /* ── 카드 ────────────────────────────────────────────────────── */
 
@@ -163,76 +162,11 @@ h3 {
   font-size: 13px;
 }
 
-.grid-2 {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 18px;
-  margin-top: 18px;
-}
-.grid-2 .card {
-  margin-top: 0;
-}
-
-/* ── 요약 스탯 카드 ───────────────────────────────────────────── */
-
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 14px;
-}
-/* [삭제: 2026-09-02 15:40, 김병현 수정] .stat-card/-label/-value/-hint — StatCard.tsx 가
-   shadcn Card + Tailwind 유틸리티로 이전 완료(계획서 §7 Phase 3a). .stat-grid(컨테이너)는
-   PlayerDetailPage.tsx/SynergyPage.tsx 가 아직 원문 그대로 쓰고 있어서(Phase 4) 남겨 둔다. */
-
-/* ── 표 ──────────────────────────────────────────────────────── */
-
-.table-wrap {
-  overflow-x: auto;
-}
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-}
-.table th,
-.table td {
-  padding: 9px 10px;
-  text-align: right;
-  white-space: nowrap;
-  border-bottom: 1px solid var(--border);
-}
-.table thead th {
-  color: var(--muted);
-  font-weight: 600;
-  font-size: 12.5px;
-  border-bottom: 1px solid var(--baseline);
-}
-.table tbody tr:last-child td {
-  border-bottom: none;
-}
-.table tbody tr:hover {
-  background: color-mix(in srgb, var(--series-1) 6%, transparent);
-}
-.col-name,
-.table th.col-name {
-  text-align: left;
-}
-.col-rank {
-  width: 40px;
-}
-.num {
-  font-variant-numeric: tabular-nums;
-}
-.strong {
-  font-weight: 700;
-}
-.muted {
-  color: var(--muted);
-}
-.table-empty {
-  padding: 18px 10px;
-  color: var(--muted);
-}
+/* [삭제: 2026-09-02 19:10, 김병현 수정] .grid-2/.grid-2 .card, .stat-grid, .table-wrap/
+   .table(그 안 전부)/.col-name/.col-rank/.num/.strong/.muted/.table-empty —
+   PlayerDetailPage.tsx·SynergyPage.tsx·ComparePage.tsx·PlayersPage.tsx 마지막 사용처가
+   전부 Tailwind grid + shadcn Table/TableScroller/Card 로 이전 완료(계획서 §7 Phase 4e).
+   실사용처 0곳 확인. */
 
 .link {
   color: var(--series-1);
@@ -264,11 +198,8 @@ h3 {
   border-color: var(--baseline);
   background: color-mix(in srgb, var(--series-1) 8%, var(--surface));
 }
-.btn--icon {
-  padding: 7px 10px;
-  font-size: 15px;
-  line-height: 1;
-}
+/* [삭제: 2026-09-02 19:10, 김병현 수정] .btn--icon — ComparePage.tsx 의 스왑 버튼이
+   Button(size="icon")으로 이전 완료(계획서 §7 Phase 4e). */
 
 .select,
 .search {
@@ -340,10 +271,9 @@ h3 {
    전역 규칙(.animate-pulse 끄기)이 대신한다. .state/.state--error/.state--empty 는
    App.tsx(NotFound, Phase 4h)가 아직 원문 그대로 쓰고 있어서 남겨 둔다. */
 
-/* Recharts 표면 배경이 카드와 섞이도록 여백만 조금 */
-.chart-card .recharts-wrapper {
-  font-family: inherit;
-}
+/* [삭제: 2026-09-02 19:10, 김병현 수정] .chart-card .recharts-wrapper — 전역 규칙
+   (index.css @layer base 의 .recharts-wrapper { font-family: inherit })이 이미 대신한다.
+   .chart-card 클래스 자체가 이제 실사용처 0곳이라 이 중첩 선택자도 같이 지운다. */
 
 /* ── 업로드 화면 ─────────────────────────────────────────────── */
 /* [변경: 2026-07-14 14:21, 김병현 수정] 엑셀 기록지 업로드 탭 스타일 */
@@ -729,38 +659,15 @@ h3 {
 /* [삭제: 2026-09-02 15:40, 김병현 수정] .sr-only — Tailwind 내장 sr-only 유틸리티로 대체
    (계획서 §5-4). 어차피 @layer utilities 가 legacy 보다 나중이라 이미 무시되고 있었다. */
 
-/* ── 선수 비교 ────────────────────────────────────────────────── */
-/* [신설: 2026-07-27 16:45, 김병현 작성] 기존 클래스(.card/.grid-2/.table/.select/.btn/.state)를
-   그대로 재사용하고, 좌우 대조에만 필요한 최소 클래스를 여기 더한다. */
-.compare-picker {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 18px;
-}
-.compare-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 13px;
-}
-.compare-field-caption {
-  color: var(--muted);
-}
-/* [변경: 2026-09-02 17:40, 김병현 수정] 아래 주석이 CSS 를 깨뜨리던 것을 고쳤다.
-   원래 첫 줄이 ".compare-side--*" 로 끝났는데, 별표+슬래시가 곧 주석 닫기(별표 슬래시)라
-   주석이 여기서 끝나 버렸다. 그 바람에 나머지 설명 줄이 CSS 로 새어나가 선택자가 되었고,
-   바로 뒤의 max-width:560px 미디어쿼리를 통째로 삼켜 .game-row 2단 배치와 .game-meta 숨김이
-   폰에서 안 먹었다. 주석 안에서는 별표 바로 뒤에 슬래시를 쓰지 않는다.
-
-   [삭제: 2026-09-02 16:30, 김병현 수정]
+/* [삭제: 2026-09-02 19:10, 김병현 수정] ── 선수 비교 섹션 전체 제거.
    .compare-table, .compare-metric, .compare-side--left, .compare-side--right,
    .compare-value, .compare-hint, .is-better(.is-left, .is-right), .compare-swatch--left,
-   .compare-swatch--right — CompareTable.tsx 가 shadcn Table + Tailwind 유틸리티로
-   이전 완료(계획서 §7 Phase 3c).
-   .compare-picker, .compare-field, .compare-field-caption 은 ComparePage.tsx(Phase 4)가
-   아직 원문 그대로 쓰고 있어서 남겨 둔다. */
+   .compare-swatch--right 는 Phase 3c 에서, .compare-picker, .compare-field,
+   .compare-field-caption 은 ComparePage.tsx 가 NativeSelect + Tailwind 유틸리티로
+   Phase 4e 에서 각각 이전 완료했다. 실사용처 0곳 확인.
+   ⚠ 주의: 이 자리에 있던 예전 주석이 별표 바로 뒤에 슬래시를 써서 주석이 중간에 끊기고
+   뒤의 max-width:560px 미디어쿼리를 통째로 삼킨 사고가 있었다(세션 기록 참고) — 지금
+   이 블록엔 그 문제의 원인 문자열이 아예 없다. */
 
 /* [삭제: 2026-09-02 18:40, 김병현 수정] @media (max-width: 560px) 블록 전체 제거 —
    안에 있던 .container/.nav-link/.nav--admin 은 Phase 2 에서, .game-row/.game-meta 는
@@ -773,12 +680,10 @@ h3 {
    .link-btn(:hover, [aria-expanded]) — SynergyPage.tsx 가 NativeSelect + useMetricTabs +
    Button(variant=link) + Tailwind 유틸리티로 이전 완료(계획서 §7 Phase 4c). */
 
-/* 지표·기준 선수·대회를 바꿔 새 데이터를 받는 동안(결정 9). 이전 표를 지우지 않고 흐리게만 한다.
-   ComparePage/GameDetailPage/GamesPage/PlayersPage(Phase 4d·4e)가 아직 원문 그대로 쓴다. */
-.is-stale {
-  opacity: 0.55;
-  transition: opacity 120ms ease;
-}
+/* [삭제: 2026-09-02 19:10, 김병현 수정] .is-stale — 지표·기준 선수·대회를 바꿔 새 데이터를
+   받는 동안 이전 표를 흐리게 하던 규칙(결정 9). 마지막 사용처(ComparePage/GameDetailPage/
+   GamesPage/PlayersPage)가 전부 Tailwind opacity-55 transition-opacity 로 이전 완료
+   (계획서 §7 Phase 4d·4e). 실사용처 0곳 확인. */
 
 /* [삭제: 2026-09-02 18:20, 김병현 수정] .row-muted/.row-picked/.delta-good/-bad/-flat,
    .growth-note/.growth-scope-note — SynergyPage.tsx·GrowthPage.tsx 가 Tailwind 유틸리티

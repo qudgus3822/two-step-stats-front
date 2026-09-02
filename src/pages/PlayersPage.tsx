@@ -9,6 +9,15 @@ import { PlayerLink } from '../components/PlayerLink';
 import { Empty, ErrorView, TableSkeleton } from '../components/states';
 // [변경: 2026-07-15 11:37, 김병현 수정] formatAvg import 추가 — 경기당 득점 표시용.
 import { formatAvg } from '../lib/format';
+// [변경: 2026-09-02 18:50, 김병현 수정] 아래 5줄 — 계획서 §7 Phase 4e.
+// .page* → PageHeader, .search → Input, .table-wrap.card → Card+TableScroller,
+// .table-empty → Empty, .table → shadcn Table.
+import { PageHeader } from '../components/PageHeader';
+import { Card, CardContent } from '../components/ui/card';
+import { Input } from '../components/ui/input';
+import { TableScroller } from '../components/TableScroller';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { cn } from '../lib/utils';
 
 // 선수 목록: 득점 많은 순 표. 이름으로 즉석 검색(클라이언트 필터)도 된다.
 // [변경: 2026-07-15 11:37, 김병현 수정] 메인 지표를 누적 득점 → 경기당 득점으로.
@@ -35,13 +44,10 @@ export function PlayersPage() {
   }, [data, query]);
 
   return (
-    <div className="page">
-      <div className="page-head">
-        <h1 className="page-title">선수</h1>
-        {/* [변경: 2026-07-15 11:37, 김병현 수정] "득점순" → "경기당 득점순"으로 문구 변경. */}
-        {/* [변경: 2026-07-28 15:44, 김병현 수정] 실제 정렬이 가나다순으로 바뀌어 문구도 맞춘다. */}
-        <p className="page-sub">{competitionLabel ?? '전체 대회'} · 가나다순</p>
-      </div>
+    <div className="flex flex-col gap-4">
+      {/* [변경: 2026-07-15 11:37, 김병현 수정] "득점순" → "경기당 득점순"으로 문구 변경. */}
+      {/* [변경: 2026-07-28 15:44, 김병현 수정] 실제 정렬이 가나다순으로 바뀌어 문구도 맞춘다. */}
+      <PageHeader title="선수" sub={`${competitionLabel ?? '전체 대회'} · 가나다순`} />
 
       {/* [변경: 2026-07-15 10:28, 김병현 수정] loading→isLoading, error→error.message, reload→refetch */}
       {/* [변경: 2026-07-29 10:36, 김병현 수정] 스피너 → 표 모양 뼈대. 열 6개(#/선수/팀/출전/경기당/누적). */}
@@ -51,8 +57,8 @@ export function PlayersPage() {
 
       {data && data.length > 0 && (
         <>
-          <input
-            className="search"
+          <Input
+            className="max-w-[320px]"
             type="search"
             placeholder="선수 이름 검색…"
             value={query}
@@ -62,37 +68,52 @@ export function PlayersPage() {
 
           {/* [변경: 2026-07-29 10:36, 김병현 수정] 검색창은 그대로 두고 표만 흐리게 — 대회를 바꿔도
               입력한 검색어는 계속 또렷하게 보여야 "내가 친 건 살아 있다"가 읽힌다. */}
-          <div className={`table-wrap card ${stale ? 'is-stale' : ''}`} aria-busy={stale}>
-            <table className="table">
-              <thead>
-                <tr>
-                  <th className="col-rank">#</th>
-                  <th className="col-name">선수</th>
-                  <th>팀</th>
-                  <th>출전</th>
-                  {/* [변경: 2026-07-15 11:37, 김병현 수정] "경기당" strong 컬럼 추가, 기존 "누적 득점"은 muted 보조로. */}
-                  <th>경기당</th>
-                  <th>누적</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((p, i) => (
-                  <tr key={p.player}>
-                    <td className="num muted">{i + 1}</td>
-                    <td className="col-name">
-                      <PlayerLink name={p.player} />
-                    </td>
-                    <td className="muted">{p.teams.join(', ')}</td>
-                    <td className="num">{p.games}</td>
-                    {/* [변경: 2026-07-15 11:37, 김병현 수정] 경기당(strong) 추가, 누적(muted)으로 강등. */}
-                    <td className="num strong">{formatAvg(p.ppg)}</td>
-                    <td className="num muted">{p.pts}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {filtered.length === 0 && <div className="table-empty">"{query}" 와 맞는 선수가 없어요.</div>}
-          </div>
+          <Card
+            className={cn(stale && 'opacity-55 transition-opacity')}
+            aria-busy={stale}
+          >
+            <CardContent>
+              <TableScroller label="선수 목록">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10 text-right">#</TableHead>
+                      <TableHead className="text-left">선수</TableHead>
+                      <TableHead className="text-left">팀</TableHead>
+                      <TableHead className="text-right">출전</TableHead>
+                      {/* [변경: 2026-07-15 11:37, 김병현 수정] "경기당" strong 컬럼 추가, 기존 "누적 득점"은 muted 보조로. */}
+                      <TableHead className="text-right">경기당</TableHead>
+                      <TableHead className="text-right">누적</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((p, i) => (
+                      <TableRow key={p.player}>
+                        <TableCell className="text-right tabular-nums text-muted-foreground">
+                          {i + 1}
+                        </TableCell>
+                        <TableCell className="text-left">
+                          <PlayerLink name={p.player} />
+                        </TableCell>
+                        <TableCell className="text-left text-muted-foreground">
+                          {p.teams.join(', ')}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">{p.games}</TableCell>
+                        {/* [변경: 2026-07-15 11:37, 김병현 수정] 경기당(strong) 추가, 누적(muted)으로 강등. */}
+                        <TableCell className="text-right font-semibold tabular-nums">
+                          {formatAvg(p.ppg)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums text-muted-foreground">
+                          {p.pts}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableScroller>
+              {filtered.length === 0 && <Empty>"{query}" 와 맞는 선수가 없어요.</Empty>}
+            </CardContent>
+          </Card>
         </>
       )}
     </div>

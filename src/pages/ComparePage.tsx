@@ -12,6 +12,17 @@ import { useCompareSelection } from '../hooks/useCompareSelection';
 import { buildComparisonTrend, buildShootingRows, buildSummaryRows } from '../lib/comparison';
 import { gameLabel } from '../lib/format';
 import { summarizePlayer } from '../lib/playerSummary';
+// [변경: 2026-09-02 19:10, 김병현 수정] 아래 6줄 — 계획서 §7 Phase 4e.
+// .page* → PageHeader, .compare-picker/-field → NativeSelect, 스왑 버튼 → Button(size=icon),
+// .card* → SectionCard, .grid-2 → Tailwind grid, .table-wrap/.table → TableScroller+shadcn Table.
+import { ArrowLeftRight } from 'lucide-react';
+import { PageHeader } from '../components/PageHeader';
+import { SectionCard } from '../components/SectionCard';
+import { TableScroller } from '../components/TableScroller';
+import { Button } from '../components/ui/button';
+import { NativeSelect, NativeSelectOption } from '../components/ui/native-select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { cn } from '../lib/utils';
 
 // 선수 두 명 + 대회를 고르면 요약/추이/슈팅/경기 로그를 나란히 대조해서 보여주는 화면.
 // 계산은 lib/playerSummary·lib/comparison 이 다 하고, 여기는 상태 판정 + 조립만 한다.
@@ -49,12 +60,9 @@ export function ComparePage() {
   const right = rightQuery.data;
 
   return (
-    <div className="page">
+    <div className="flex flex-col gap-4">
       {/* 1. 페이지 헤더 — 로딩·에러 중에도 항상 보인다. */}
-      <div className="page-head">
-        <h1 className="page-title">선수 비교</h1>
-        <p className="page-sub">{buildSubtitle(competitionId, competitionLabel, scopeError)}</p>
-      </div>
+      <PageHeader title="선수 비교" sub={buildSubtitle(competitionId, competitionLabel, scopeError)} />
 
       {/* 2~4. 페이지 수준 판정: 목록 자체를 못 가져오면 여기서 끝난다. */}
       {pageError ? (
@@ -66,7 +74,7 @@ export function ComparePage() {
       ) : (
         <>
           {/* 5. 선택 바 — 여기부터는 아래 결과 영역이 무슨 상태든 계속 보인다. */}
-          <div className="compare-picker">
+          <div className="flex flex-wrap items-end gap-3">
             <PlayerSelect
               caption="선수 A"
               value={playerA}
@@ -74,15 +82,16 @@ export function ComparePage() {
               players={players}
               takenName={playerB}
             />
-            <button
+            <Button
               type="button"
-              className="btn btn--icon"
+              variant="outline"
+              size="icon"
               onClick={swap}
               aria-label="두 선수 자리 바꾸기"
               title="자리 바꾸기"
             >
-              ⇄
-            </button>
+              <ArrowLeftRight />
+            </Button>
             <PlayerSelect
               caption="선수 B"
               value={playerB}
@@ -110,7 +119,10 @@ export function ComparePage() {
           ) : (
             // [변경: 2026-07-29 10:36, 김병현 수정] 선택 바는 또렷하게 두고 결과만 흐리게 —
             // 방금 바꾼 선택이 화면에 그대로 남아 있어야 "먹혔다"가 읽힌다.
-            <div className={detailStale ? 'is-stale' : ''} aria-busy={detailStale}>
+            <div
+              className={cn('flex flex-col gap-4', detailStale && 'opacity-55 transition-opacity')}
+              aria-busy={detailStale}
+            >
               <CompareResults left={left} right={right} />
             </div>
           )}
@@ -167,42 +179,31 @@ function CompareResults({ left, right }: { left: PlayerDetail; right: PlayerDeta
 
   return (
     <>
-      <section className="card">
-        <div className="card-head">
-          <h2 className="card-title">요약 비교</h2>
-        </div>
+      <SectionCard title="요약 비교">
         <CompareTable
           leftName={left.player}
           rightName={right.player}
           rows={buildSummaryRows(leftSummary, rightSummary)}
         />
-      </section>
+      </SectionCard>
 
-      <div className="grid-2">
-        <section className="card chart-card">
-          <div className="card-head">
-            <h2 className="card-title">경기별 득점 추이</h2>
-            <span className="card-note">미출전 경기는 건너뛰고 이어 그렸어요.</span>
-          </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <SectionCard title="경기별 득점 추이" note="미출전 경기는 건너뛰고 이어 그렸어요.">
           {/* 비교 차트는 extraKeys 를 안 넘긴다 — ChartTooltip 은 그 x 지점 데이터 행 통째를
               읽는데, 우리 행은 키 하나에 값 하나뿐이라 두 선수의 상대/스코어가 부딪힌다. */}
           <TrendLine data={trend.points} series={trend.series} format={(v) => `${v}점`} />
-        </section>
+        </SectionCard>
 
-        <section className="card chart-card">
-          <div className="card-head">
-            <h2 className="card-title">슈팅 성공률(누적)</h2>
-            <span className="card-note">시도가 적으면 성공률이 크게 튈 수 있어요.</span>
-          </div>
+        <SectionCard title="슈팅 성공률(누적)" note="시도가 적으면 성공률이 크게 튈 수 있어요.">
           <CompareTable
             leftName={left.player}
             rightName={right.player}
             rows={buildShootingRows(leftSummary, rightSummary)}
           />
-        </section>
+        </SectionCard>
       </div>
 
-      <div className="grid-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         <PlayerGameLog detail={left} />
         <PlayerGameLog detail={right} />
       </div>
@@ -213,51 +214,50 @@ function CompareResults({ left, right }: { left: PlayerDetail; right: PlayerDeta
 // 경기 로그 카드 — 선수 상세와 같은 8열(AC 72). 두 선수가 뛴 경기가 달라 합치지 않고 카드 두 장.
 function PlayerGameLog({ detail }: { detail: PlayerDetail }) {
   return (
-    <section className="card">
-      <div className="card-head">
-        <h2 className="card-title">{detail.player} 경기 로그</h2>
-        <span className="card-note">{detail.games.length}경기</span>
-      </div>
-      <div className="table-wrap">
-        <table className="table">
-          <thead>
-            <tr>
-              <th className="col-name">경기</th>
-              <th>상대</th>
-              <th>결과</th>
-              <th>스코어</th>
-              <th>득점</th>
-              <th>리바운드</th>
-              <th>어시스트</th>
-              <th>스틸</th>
-            </tr>
-          </thead>
-          <tbody>
+    <SectionCard title={`${detail.player} 경기 로그`} note={`${detail.games.length}경기`}>
+      <TableScroller label={`${detail.player} 경기 로그`}>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-left">경기</TableHead>
+              <TableHead className="text-left">상대</TableHead>
+              <TableHead className="text-left">결과</TableHead>
+              <TableHead className="text-right">스코어</TableHead>
+              <TableHead className="text-right">득점</TableHead>
+              <TableHead className="text-right">리바운드</TableHead>
+              <TableHead className="text-right">어시스트</TableHead>
+              <TableHead className="text-right">스틸</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {detail.games.map((g) => (
-              <tr key={g.id}>
-                <td className="col-name">
-                  <Link className="link" to={`/games/${encodeURIComponent(g.id)}`}>
+              <TableRow key={g.id}>
+                <TableCell className="text-left">
+                  <Link
+                    className="font-medium text-primary hover:underline"
+                    to={`/games/${encodeURIComponent(g.id)}`}
+                  >
                     {gameLabel(g.week, g.game)}
                   </Link>
-                </td>
-                <td className="muted">{g.opponent ?? '—'}</td>
-                <td>
+                </TableCell>
+                <TableCell className="text-left text-muted-foreground">{g.opponent ?? '—'}</TableCell>
+                <TableCell className="text-left">
                   <ResultBadge result={g.result} />
-                </td>
-                <td className="num muted">
+                </TableCell>
+                <TableCell className="text-right tabular-nums text-muted-foreground">
                   {g.teamScore}
                   {g.opponentScore != null ? `:${g.opponentScore}` : ''}
-                </td>
-                <td className="num strong">{g.pts}</td>
-                <td className="num">{g.reb}</td>
-                <td className="num">{g.ast}</td>
-                <td className="num">{g.stl}</td>
-              </tr>
+                </TableCell>
+                <TableCell className="text-right font-semibold tabular-nums">{g.pts}</TableCell>
+                <TableCell className="text-right tabular-nums">{g.reb}</TableCell>
+                <TableCell className="text-right tabular-nums">{g.ast}</TableCell>
+                <TableCell className="text-right tabular-nums">{g.stl}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
+          </TableBody>
+        </Table>
+      </TableScroller>
+    </SectionCard>
   );
 }
 
@@ -277,26 +277,25 @@ function PlayerSelect({
   takenName: string | null;
 }) {
   return (
-    <label className="compare-field">
-      <span className="compare-field-caption">{caption}</span>
-      <select
-        className="select"
+    <label className="flex flex-col gap-1.5 text-sm">
+      <span className="text-muted-foreground">{caption}</span>
+      <NativeSelect
         aria-label={`${caption} 선택`}
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value || null)}
       >
-        <option value="">선수 선택…</option>
+        <NativeSelectOption value="">선수 선택…</NativeSelectOption>
         {value && !players.some((p) => p.player === value) && (
-          <option value={value} disabled>
+          <NativeSelectOption value={value} disabled>
             {value} (이 대회 기록 없음)
-          </option>
+          </NativeSelectOption>
         )}
         {players.map((p) => (
-          <option key={p.player} value={p.player} disabled={p.player === takenName}>
+          <NativeSelectOption key={p.player} value={p.player} disabled={p.player === takenName}>
             {p.player}
-          </option>
+          </NativeSelectOption>
         ))}
-      </select>
+      </NativeSelect>
     </label>
   );
 }

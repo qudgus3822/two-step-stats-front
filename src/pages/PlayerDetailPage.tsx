@@ -16,6 +16,14 @@ import { Empty, ErrorView, TableSkeleton } from '../components/states';
 import { gameLabel, formatAvg } from '../lib/format';
 import { summarizePlayer } from '../lib/playerSummary';
 import { useTheme } from '../theme/ThemeContext';
+// [변경: 2026-09-02 19:00, 김병현 수정] 아래 4줄 — 계획서 §7 Phase 4e.
+// .breadcrumb → Breadcrumb, .page-head* → PageHeader, .card* → SectionCard,
+// .table-wrap/.table → TableScroller + shadcn Table.
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from '../components/ui/breadcrumb';
+import { PageHeader } from '../components/PageHeader';
+import { SectionCard } from '../components/SectionCard';
+import { TableScroller } from '../components/TableScroller';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 
 // 선수 상세: 누적 요약 + 경기별 득점 추이(라인) + 슈팅 성공률 + 경기 로그 표.
 // [변경: 2026-07-15 11:37, 김병현 수정] 요약 카드를 누적 → 경기당 평균(통산, 누적은 hint)으로.
@@ -33,12 +41,16 @@ export function PlayerDetailPage() {
   const summary = data ? summarizePlayer(data) : null;
 
   return (
-    <div className="page">
-      <div className="breadcrumb">
-        <Link className="link" to="/players">
-          ← 선수 목록
-        </Link>
-      </div>
+    <div className="flex flex-col gap-4">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/players">← 선수 목록</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
 
       {/* [변경: 2026-07-15 10:28, 김병현 수정] loading→isLoading, error→error.message, reload→refetch */}
       {/* [변경: 2026-07-29 10:36, 김병현 수정] 경기 로그 표(열 8개) 자리를 미리 잡는다. */}
@@ -48,18 +60,20 @@ export function PlayerDetailPage() {
 
       {data && summary && (
         <>
-          <div className="page-head">
-            <h1 className="page-title">{data.player}</h1>
-            <p className="page-sub">
-              {teamsOf(data.games).map((t) => (
-                <TeamBadge key={t} team={t} />
-              ))}
-            </p>
-          </div>
+          <PageHeader
+            title={data.player}
+            sub={
+              <span className="flex flex-wrap gap-1.5">
+                {teamsOf(data.games).map((t) => (
+                  <TeamBadge key={t} team={t} />
+                ))}
+              </span>
+            }
+          />
 
           {/* 누적 요약 카드 */}
           {/* [변경: 2026-07-15 11:37, 김병현 수정] value=경기당 평균(통산), hint=누적. 라벨에 (통산) — 상세는 통산 스코프. */}
-          <div className="stat-grid">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             <StatCard label="출전" value={summary.games} accent={tokens.series[0]} />
             <StatCard
               label="경기당 득점(통산)"
@@ -88,12 +102,9 @@ export function PlayerDetailPage() {
             />
           </div>
 
-          <div className="grid-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             {/* 경기별 득점 추이 */}
-            <section className="card chart-card">
-              <div className="card-head">
-                <h2 className="card-title">경기별 득점 추이</h2>
-              </div>
+            <SectionCard title="경기별 득점 추이">
               {data.games.length > 0 ? (
                 <TrendLine
                   data={toTrend(data.games)}
@@ -108,63 +119,61 @@ export function PlayerDetailPage() {
               ) : (
                 <Empty>경기 기록이 없어요.</Empty>
               )}
-            </section>
+            </SectionCard>
 
             {/* 슈팅 성공률 */}
-            <section className="card chart-card">
-              <div className="card-head">
-                <h2 className="card-title">슈팅 성공률(누적)</h2>
-              </div>
+            <SectionCard title="슈팅 성공률(누적)">
               <ShootingSplits box={data.totals} />
-            </section>
+            </SectionCard>
           </div>
 
           {/* 경기 로그 */}
-          <section className="card">
-            <div className="card-head">
-              <h2 className="card-title">경기 로그</h2>
-              <span className="card-note">{data.games.length}경기</span>
-            </div>
-            <div className="table-wrap">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th className="col-name">경기</th>
-                    <th>상대</th>
-                    <th>결과</th>
-                    <th>스코어</th>
-                    <th>득점</th>
-                    <th>리바운드</th>
-                    <th>어시스트</th>
-                    <th>스틸</th>
-                  </tr>
-                </thead>
-                <tbody>
+          <SectionCard title="경기 로그" note={`${data.games.length}경기`}>
+            <TableScroller label="경기 로그">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-left">경기</TableHead>
+                    <TableHead className="text-left">상대</TableHead>
+                    <TableHead className="text-left">결과</TableHead>
+                    <TableHead className="text-right">스코어</TableHead>
+                    <TableHead className="text-right">득점</TableHead>
+                    <TableHead className="text-right">리바운드</TableHead>
+                    <TableHead className="text-right">어시스트</TableHead>
+                    <TableHead className="text-right">스틸</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {data.games.map((g) => (
-                    <tr key={g.id}>
-                      <td className="col-name">
-                        <Link className="link" to={`/games/${encodeURIComponent(g.id)}`}>
+                    <TableRow key={g.id}>
+                      <TableCell className="text-left">
+                        <Link
+                          className="font-medium text-primary hover:underline"
+                          to={`/games/${encodeURIComponent(g.id)}`}
+                        >
                           {gameLabel(g.week, g.game)}
                         </Link>
-                      </td>
-                      <td className="muted">{g.opponent ?? '—'}</td>
-                      <td>
+                      </TableCell>
+                      <TableCell className="text-left text-muted-foreground">
+                        {g.opponent ?? '—'}
+                      </TableCell>
+                      <TableCell className="text-left">
                         <ResultBadge result={g.result} />
-                      </td>
-                      <td className="num muted">
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-muted-foreground">
                         {g.teamScore}
                         {g.opponentScore != null ? `:${g.opponentScore}` : ''}
-                      </td>
-                      <td className="num strong">{g.pts}</td>
-                      <td className="num">{g.reb}</td>
-                      <td className="num">{g.ast}</td>
-                      <td className="num">{g.stl}</td>
-                    </tr>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold tabular-nums">{g.pts}</TableCell>
+                      <TableCell className="text-right tabular-nums">{g.reb}</TableCell>
+                      <TableCell className="text-right tabular-nums">{g.ast}</TableCell>
+                      <TableCell className="text-right tabular-nums">{g.stl}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
+                </TableBody>
+              </Table>
+            </TableScroller>
+          </SectionCard>
         </>
       )}
     </div>
