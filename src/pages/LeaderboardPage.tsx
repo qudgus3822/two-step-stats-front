@@ -29,6 +29,33 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 // [변경: 2026-07-14 17:49, 김병현 수정] 표는 전체 순위, 막대 차트만 상위 12명으로 제한.
 const CHART_TOP_N = 12;
 
+// [신설: 2026-09-02 15:40, 김병현 작성] 중계 그래픽 리디자인(broadcast-redesign) Phase C —
+// 1~3위 순위 칩. 색만으로 구분하지 않는다 — 굵기와 칩 배경(진하기 3단계)이 같이 바뀌어야
+// 색맹도 "위쪽 3명이 특별하다"를 알 수 있다(계획서 AC-C1). 금/은/동 같은 새 팔레트 색은
+// 안 쓰고 이미 있는 토큰(primary·foreground 투명도)만 조합했다 — checkPalette 게이트에
+// 색을 새로 안 늘린다. 4위부터는 옛 화면 그대로(칩 없이 흐린 숫자)라 나머지 표는 안 바뀐다.
+const RANK_TOP_STYLE: Record<number, string> = {
+  1: 'bg-primary text-primary-foreground font-bold',
+  2: 'bg-foreground/15 text-foreground font-bold',
+  3: 'bg-foreground/8 text-foreground font-semibold',
+};
+
+function RankCell({ rank }: { rank: number }) {
+  const topStyle = RANK_TOP_STYLE[rank];
+  return (
+    <TableCell className="text-right tabular-nums">
+      <span
+        className={cn(
+          'inline-flex size-6 items-center justify-center rounded-full text-xs',
+          topStyle ?? 'text-muted-foreground',
+        )}
+      >
+        {rank}
+      </span>
+    </TableCell>
+  );
+}
+
 export function LeaderboardPage() {
   const { competitionId, competitionLabel } = useCompetition();
   const [metric, setMetric] = useState<LeaderboardMetric>('pts');
@@ -147,9 +174,7 @@ export function LeaderboardPage() {
                         if (row.kind !== 'count') return null;
                         return (
                           <TableRow key={row.player}>
-                            <TableCell className="text-right tabular-nums text-muted-foreground">
-                              {row.rank}
-                            </TableCell>
+                            <RankCell rank={row.rank} />
                             <TableCell className="text-left">
                               <PlayerLink name={row.player} />
                             </TableCell>
@@ -183,9 +208,7 @@ export function LeaderboardPage() {
                         if (row.kind !== 'rate') return null;
                         return (
                           <TableRow key={row.player}>
-                            <TableCell className="text-right tabular-nums text-muted-foreground">
-                              {row.rank}
-                            </TableCell>
+                            <RankCell rank={row.rank} />
                             <TableCell className="text-left">
                               <PlayerLink name={row.player} />
                             </TableCell>
@@ -220,9 +243,7 @@ export function LeaderboardPage() {
                         if (row.kind !== 'club180') return null;
                         return (
                           <TableRow key={row.player}>
-                            <TableCell className="text-right tabular-nums text-muted-foreground">
-                              {row.rank}
-                            </TableCell>
+                            <RankCell rank={row.rank} />
                             <TableCell className="text-left">
                               <PlayerLink name={row.player} />
                             </TableCell>
