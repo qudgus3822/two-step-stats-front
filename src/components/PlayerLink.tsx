@@ -14,7 +14,8 @@ export function PlayerLink({ name, children }: { name: string; children?: ReactN
   // onFocus 도 같이 거는 이유: 키보드로 표를 훑는 사람에게도 같은 이득을 준다(마우스 전용 X).
   return (
     <Link
-      className="link"
+      // [변경: 2026-09-02 15:35, 김병현 수정] .link → Tailwind 유틸리티(계획서 §5-2).
+      className="font-medium text-primary hover:underline"
       to={`/players/${encodeURIComponent(name)}`}
       onMouseEnter={() => prefetch.player(name)}
       onFocus={() => prefetch.player(name)}
