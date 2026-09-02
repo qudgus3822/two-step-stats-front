@@ -12,6 +12,9 @@ import { useCompetition } from '../context/CompetitionContext';
 import { ChampionshipExportCard } from '../components/ChampionshipExportCard';
 import { ChampionshipRosterTable } from '../components/ChampionshipRosterTable';
 import { PlayerWinsTable } from '../components/PlayerWinsTable';
+// [변경: 2026-09-02 김병현 수정] 우승자 표와 '아직 우승 없음' 표를 나눴다.
+import { WinlessPlayersTable } from '../components/WinlessPlayersTable';
+import { splitByWins } from '../lib/championships';
 import { Empty, ErrorView, TableSkeleton } from '../components/states';
 
 // [신설: 2026-09-02 김병현 작성] 우승횟수 관리 화면.
@@ -73,6 +76,8 @@ export function ChampionshipPage() {
 
   const roster = rosterQuery.data ?? null;
   const overview = championshipsQuery.data ?? null;
+  // 명예의 전당과 완전히 같은 가르기 규칙을 쓴다(복제하지 않고 lib 함수 재사용).
+  const { winners, winless } = splitByWins(overview?.playerWins ?? []);
   const wonCount = roster ? roster.players.filter((p) => p.won).length : 0;
 
   return (
@@ -157,7 +162,7 @@ export function ChampionshipPage() {
         <div className="card-head">
           <h2 className="card-title">통산 우승횟수</h2>
           <span className="card-note">
-            {overview ? `우승 ${overview.wins.length}건 · 선수 ${overview.playerWins.length}명` : ''}
+            {overview ? `우승 ${overview.wins.length}건 · 우승 경험 ${winners.length}명` : ''}
           </span>
         </div>
 
@@ -167,10 +172,19 @@ export function ChampionshipPage() {
             onRetry={() => void championshipsQuery.refetch()}
           />
         )}
-        {championshipsQuery.isLoading && <TableSkeleton rows={8} cols={4} />}
-        {overview && !championshipsQuery.error && (
-          <PlayerWinsTable playerWins={overview.playerWins} />
-        )}
+        {championshipsQuery.isLoading && <TableSkeleton rows={8} cols={6} />}
+        {overview && !championshipsQuery.error && <PlayerWinsTable winners={winners} />}
+      </section>
+
+      <section className="card">
+        <div className="card-head">
+          <h2 className="card-title">아직 우승이 없어요 ㅜ.ㅜ</h2>
+          <span className="card-note">
+            {overview ? `${winless.length}명 · 오래 뛴 순` : ''}
+          </span>
+        </div>
+        {championshipsQuery.isLoading && <TableSkeleton rows={6} cols={2} />}
+        {overview && !championshipsQuery.error && <WinlessPlayersTable winless={winless} />}
       </section>
 
       <ChampionshipExportCard />

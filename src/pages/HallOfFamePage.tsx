@@ -1,7 +1,10 @@
 import { useChampionships } from '../api/queries';
 import { ChampionshipHistory } from '../components/ChampionshipHistory';
 import { PlayerWinsTable } from '../components/PlayerWinsTable';
+// [변경: 2026-09-02 김병현 수정] 우승자 표와 '아직 우승 없음' 표를 나눴다.
+import { WinlessPlayersTable } from '../components/WinlessPlayersTable';
 import { ErrorView, TableSkeleton } from '../components/states';
+import { splitByWins } from '../lib/championships';
 
 // [신설: 2026-09-02 김병현 작성] 명예의 전당 — 우승 기록 '보기 전용' 화면.
 //
@@ -15,6 +18,9 @@ import { ErrorView, TableSkeleton } from '../components/states';
 export function HallOfFamePage() {
   const query = useChampionships();
   const overview = query.data ?? null;
+  // [변경: 2026-09-02 김병현 수정] playerWins 에는 우승 0회 선수도 들어 있다 → 두 무리로 가른다.
+  // 가르는 규칙(정렬 포함)은 lib 에 한 벌만 둔다 — 관리 화면도 같은 함수를 쓴다.
+  const { winners, winless } = splitByWins(overview?.playerWins ?? []);
 
   return (
     <div className="page">
@@ -22,7 +28,7 @@ export function HallOfFamePage() {
         <h1 className="page-title">명예의 전당</h1>
         <p className="page-sub">
           {overview
-            ? `역대 우승 ${overview.wins.length}건 · 우승 경험 선수 ${overview.playerWins.length}명`
+            ? `역대 우승 ${overview.wins.length}건 · 우승 경험 ${winners.length}명 · 아직 없는 선수 ${winless.length}명`
             : '역대 우승팀과 선수별 통산 우승횟수'}
         </p>
       </div>
@@ -34,10 +40,19 @@ export function HallOfFamePage() {
       <section className="card">
         <div className="card-head">
           <h2 className="card-title">통산 우승 순위</h2>
-          <span className="card-note">우승 많은 순</span>
+          <span className="card-note">승률 = 우승 ÷ 뛴 시즌</span>
         </div>
-        {query.isLoading && <TableSkeleton rows={10} cols={4} />}
-        {overview && !query.error && <PlayerWinsTable playerWins={overview.playerWins} />}
+        {query.isLoading && <TableSkeleton rows={10} cols={6} />}
+        {overview && !query.error && <PlayerWinsTable winners={winners} />}
+      </section>
+
+      <section className="card">
+        <div className="card-head">
+          <h2 className="card-title">아직 우승이 없어요 ㅜ.ㅜ</h2>
+          <span className="card-note">오래 뛴 순</span>
+        </div>
+        {query.isLoading && <TableSkeleton rows={6} cols={2} />}
+        {overview && !query.error && <WinlessPlayersTable winless={winless} />}
       </section>
 
       <section className="card">

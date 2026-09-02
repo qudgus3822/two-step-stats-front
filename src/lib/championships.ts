@@ -1,4 +1,4 @@
-import type { ChampionshipGroup, ChampionshipWin } from '../api/types';
+import type { ChampionshipGroup, ChampionshipWin, PlayerWins } from '../api/types';
 
 // [신설: 2026-09-02 김병현 작성] 우승 줄(선수 단위) → 대회 단위로 되묶기.
 //
@@ -56,4 +56,27 @@ function dominantTeamName(rows: ChampionshipWin[]): string {
   return [...counts.entries()].sort(
     (a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ko'),
   )[0][0];
+}
+
+// [신설: 2026-09-02 김병현 작성] 선수 명단을 '우승자'와 '아직 우승 없는 사람'으로 가른다.
+//
+// 왜 한 표에 섞지 않나: 두 무리는 읽는 방법이 다르다. 우승자는 등수를 보는 표고,
+// 0회는 등수가 없는 명단이다. 섞어 두면 0회 줄에 번호를 붙일지 말지 같은 군더더기 규칙이
+// 생기고, 어느 쪽도 깔끔하게 안 읽힌다. 표를 나누면 각 표가 한 가지만 말한다.
+//
+// 정렬:
+//  - winners: 서버 순서 그대로(우승 많은 순 → 이름순). 다시 정렬하면 규칙이 두 곳으로 갈라진다.
+//  - winless: **뛴 시즌 많은 순** 으로 다시 정렬한다. 이 표의 이야기는 "얼마나 오래 기다렸나"라
+//             이름순보다 시즌 수가 앞에 오는 게 맞다. (서버는 이 무리 안에서 이름순만 보장한다)
+export function splitByWins(playerWins: PlayerWins[]): {
+  winners: PlayerWins[];
+  winless: PlayerWins[];
+} {
+  const winners = playerWins.filter((p) => p.wins > 0);
+  const winless = playerWins
+    .filter((p) => p.wins === 0)
+    // slice 없이 filter 결과를 정렬한다 — filter 가 이미 새 배열을 만들어서
+    // 원본(캐시가 들고 있는 서버 응답)을 건드리지 않는다.
+    .sort((a, b) => b.seasons - a.seasons || a.player.localeCompare(b.player, 'ko'));
+  return { winners, winless };
 }

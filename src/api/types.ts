@@ -397,6 +397,12 @@ export interface PlayerWins {
   player: string;
   wins: number;
   titles: string[]; // 어느 대회들에서 우승했는지 (숫자의 근거)
+  // [신설: 2026-09-02 김병현 작성] 뛴 시즌(대회) 수 — 승률의 분모.
+  // 한 대회에 한 경기만 나와도 1시즌으로 친다.
+  seasons: number;
+  // 우승 승률(%) = wins / seasons, 소수 첫째 자리. 예: 5/12 → 41.7
+  // ⚠ seasons 가 0이면 0 이 아니라 null 이다 — "한 번도 못 이김"과 "잰 적 없음"은 다른 말이다.
+  winRate: number | null;
 }
 
 // GET /championships 응답 — 원본 줄들 + 거기서 센 통산 횟수를 한 번에.
