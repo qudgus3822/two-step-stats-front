@@ -6,6 +6,11 @@
     "module": "ESNext",
     "skipLibCheck": true,
 
+    /* [신설: 2026-09-02 13:00, 김병현 수정] shadcn/Tailwind 경로 별칭('@/...') 용.
+       vite.config.ts 의 resolve.alias 와 짝이어야 한다. */
+    "baseUrl": ".",
+    "paths": { "@/*": ["./src/*"] },
+
     /* 번들러(Vite)가 모듈을 처리하므로 bundler 해석 방식 사용 */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,

@@ -8,6 +8,10 @@ import { App } from './App';
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — SeasonProvider → CompetitionProvider(리네임).
 import { CompetitionProvider } from './context/CompetitionContext';
 import { ThemeProvider } from './theme/ThemeContext';
+// [변경: 2026-09-02 13:00, 김병현 수정] Tailwind 진입점을 옛 스타일시트보다 먼저 import 한다.
+// 순서 자체가 캐스케이드에 영향을 주진 않는다(레이어가 순서를 결정) — 다만
+// index.css 의 @layer 선언이 legacy 보다 먼저 평가돼야 레이어 순서가 확정된다.
+import './index.css';
 import './styles.css';
 
 // 앱 진입점. 프로바이더 순서: 테마 → (쿼리 캐시) → 대회 → 라우터 → App.

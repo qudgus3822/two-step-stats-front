@@ -1,0 +1,10 @@
+/* [신설: 2026-09-02 13:00, 김병현 작성] Tailwind v4 진입점.
+   Phase 1a 단계라 최소형이다 — 레이어 선언과 tailwind 임포트만.
+   토큰(색·반경·폰트)은 Phase 1b 에서 shadcn init 산출물 위에 병합한다.
+
+   레이어 순서 선언이 맨 앞인 이유: 옛 styles.css 를 'legacy' 레이어에 가둬서
+   (1) 안 옮긴 화면은 예전 그대로 보이고 (2) 옮긴 화면은 유틸리티가 이기게 하려고.
+   @layer 선언문은 @import 보다 앞에 와도 되는 몇 안 되는 규칙이다. */
+@layer theme, base, legacy, components, utilities;
+
+@import "tailwindcss";
