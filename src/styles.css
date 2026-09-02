@@ -108,82 +108,9 @@ h3 {
   letter-spacing: -0.01em;
 }
 
-/* ── 앱 껍데기 / 헤더 ─────────────────────────────────────────── */
-
-.topbar {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 12px 22px;
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  backdrop-filter: saturate(1.4) blur(8px);
-  border-bottom: 1px solid var(--border);
-  flex-wrap: wrap;
-}
-
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 750;
-  font-size: 17px;
-  letter-spacing: -0.02em;
-}
-.brand-mark {
-  font-size: 20px;
-}
-
-.nav {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-.nav-link {
-  padding: 7px 13px;
-  border-radius: 999px;
-  color: var(--text-2);
-  font-weight: 550;
-  font-size: 14px;
-  transition: background 0.14s, color 0.14s;
-}
-.nav-link:hover {
-  background: color-mix(in srgb, var(--series-1) 12%, transparent);
-  color: var(--text);
-}
-.nav-link--active {
-  background: var(--series-1);
-  color: #fff;
-}
-
-.topbar-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-left: auto;
-}
-
-/* [변경: 2026-07-27 12:15, 김병현 수정] 운영자 메뉴(업로드) — 일반 메뉴에서 떼어 오른쪽에 둘 때
-   쓰는 구분선. 오른쪽 정렬은 위 .topbar-controls 의 margin-left:auto 가 이미 해주므로 여기선
-   "경계선"만 담당한다. 색은 일부러 안 건드린다 — .nav-link--active(위쪽 150행)와 특정도가 같아
-   여기서 color 를 주면 활성 상태의 흰 글자를 덮어써 버린다. */
-.nav--admin {
-  padding-left: 12px;
-  border-left: 1px solid var(--border);
-}
-.nav-link--admin {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px; /* 자물쇠 아이콘과 글자 사이 */
-}
-
-.container {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 26px 22px 64px;
-}
+/* [삭제: 2026-09-02 14:00, 김병현 수정] 앱 껍데기/헤더 CSS(.topbar, .brand 계열, .nav 계열,
+   .topbar-controls, .container)를 통째로 지웠다. AppHeader.tsx(Tailwind 유틸리티)로 이전 완료
+   (계획서 §7 Phase 2, AC 44). */
 
 /* ── 페이지 헤더 ─────────────────────────────────────────────── */
 
@@ -425,18 +352,8 @@ h3 {
   margin-bottom: 14px;
 }
 
-.season-picker {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 13px;
-}
-.season-picker-caption {
-  color: var(--muted);
-}
-.season-picker--muted {
-  color: var(--muted);
-}
+/* [삭제: 2026-09-02 14:00, 김병현 수정] .season-picker* — CompetitionPicker.tsx 가
+   NativeSelect(Tailwind 유틸리티)로 이전 완료(계획서 §7 Phase 2). */
 
 /* ── 경기 단위 통계 패널(대시보드) ────────────────────────────── */
 
@@ -1226,26 +1143,13 @@ h3 {
 }
 
 @media (max-width: 560px) {
-  .container {
-    padding: 20px 14px 48px;
-  }
+  /* [삭제: 2026-09-02 14:00, 김병현 수정] .container/.nav-link/.nav--admin 규칙 제거 —
+     AppHeader.tsx(Tailwind 유틸리티)로 이전 완료(계획서 §7 Phase 2, AC 44). */
   .game-row {
     grid-template-columns: 1fr auto;
   }
   .game-meta {
     display: none;
-  }
-  .nav-link {
-    padding: 6px 10px;
-  }
-  /* [변경: 2026-07-27 12:15, 김병현 수정] 좁은 화면에선 헤더(.topbar)가 줄바꿈돼 운영자 메뉴가
-     새 줄 맨 앞에 오기 쉽다. 그때 세로 구분선은 나눌 대상이 없어 어색하니 없앤다.
-     참고: 실제 줄바꿈 지점은 내용 폭(대회명 길이 등)에 따라 달라져 560px 과 정확히 같지 않다.
-     이 값은 이 파일이 이미 쓰는 브레이크포인트에 맞춘 근사값이고, 어긋나는 구간에서 구분선이
-     잠깐 남는 건 허용한다(장식이라 기능엔 영향 없음). */
-  .nav--admin {
-    border-left: 0;
-    padding-left: 0;
   }
 }
 
