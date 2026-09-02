@@ -39,6 +39,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   // 모드가 바뀌면 <html> 속성과 저장소를 같이 갱신 → CSS와 JS가 항상 동기화됨.
   useEffect(() => {
+    // [변경: 2026-09-02 13:20, 김병현 수정] shadcn/Tailwind v4 는 .dark 클래스로 다크를 스위치한다.
+    // data-theme 은 옛 styles.css(@layer legacy)가 아직 보고 있어서 마이그레이션 기간엔 둘 다 칠한다.
+    // Phase 5(styles.css 삭제)에서 이 줄을 지운다.
+    document.documentElement.classList.toggle('dark', mode === 'dark');
     document.documentElement.dataset.theme = mode;
     window.localStorage.setItem(STORAGE_KEY, mode);
   }, [mode]);
