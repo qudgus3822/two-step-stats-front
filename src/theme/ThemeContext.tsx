@@ -25,13 +25,15 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 const STORAGE_KEY = 'tss-theme';
 
-// 처음 켤 때 모드 결정: 저장된 값 > OS 설정 > 라이트.
+// [변경: 2026-09-02 15:00, 김병현 수정] 중계 그래픽 스타일은 다크가 기본이다.
+// 처음 켤 때 모드 결정: 저장된 값 > 다크. (OS 설정은 더 이상 보지 않는다 — 사용자가
+// 토글하면 그 선택이 저장돼 항상 이긴다.) index.html 의 인라인 스크립트와 규칙이
+// 글자 그대로 같아야 FOUC 방지가 깨지지 않는다.
 function initialMode(): ThemeMode {
-  if (typeof window === 'undefined') return 'light';
+  if (typeof window === 'undefined') return 'dark';
   const saved = window.localStorage.getItem(STORAGE_KEY);
   if (saved === 'light' || saved === 'dark') return saved;
-  const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
-  return prefersDark ? 'dark' : 'light';
+  return 'dark';
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

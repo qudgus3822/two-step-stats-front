@@ -3,17 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="color-scheme" content="dark light" />
     <title>투스텝 스탯 · 농구 기록 대시보드</title>
-    <!-- [신설: 2026-09-02 13:15, 김병현 작성] 첫 페인트 전에 다크 여부를 정한다.
-         React 가 뜨기 전이라 여기서 안 하면 다크 사용자가 흰 화면을 한 번 본다(FOUC).
-         규칙은 ThemeContext.initialMode() 와 글자 그대로 같아야 한다 — 저장값 > OS > 라이트. -->
+    <!-- [변경: 2026-09-02 15:00, 김병현 수정] 다크가 기본이 됐다 — 저장값이 없으면 무조건 다크.
+         React 가 뜨기 전이라 여기서 안 하면 흰 화면이 한 번 스친다(FOUC).
+         규칙은 ThemeContext.initialMode() 와 글자 그대로 같아야 한다 — 저장값 > 다크. -->
     <script>
       (function () {
         try {
           var m = localStorage.getItem('tss-theme');
           if (m !== 'light' && m !== 'dark') {
-            m = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            m = 'dark';
           }
           document.documentElement.classList.toggle('dark', m === 'dark');
           document.documentElement.dataset.theme = m; /* Phase 5 에서 이 줄만 지운다 */
