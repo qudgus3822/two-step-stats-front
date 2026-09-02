@@ -125,26 +125,9 @@ h3 {
    ⚠ 주석 안에서는 별표 바로 뒤에 슬래시를 쓰지 않는다 — 와일드카드 표기(".foo-*") 대신
    "...계열"처럼 풀어 쓴다(앞선 사고 재발 방지, 세션 기록 참고). */
 
-/* [남김: 2026-09-02 20:20, 김병현 수정] .link/.state/.state--empty — App.tsx 의 NotFound 가
-   아직 원문 그대로 쓴다(Phase 4h 예정). .state--error 는 이미 실사용처 0곳이라 먼저 지운다. */
-.link {
-  color: var(--series-1);
-  font-weight: 550;
-}
-.link:hover {
-  text-decoration: underline;
-}
-
-.state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 44px 20px;
-  color: var(--text-2);
-  text-align: center;
-}
-.state--empty {
-  color: var(--muted);
-}
+/* [삭제: 2026-09-02 20:30, 김병현 수정] .link(+:hover)/.state/.state--empty —
+   App.tsx 의 NotFound 가 마지막 소비처였는데 Phase 4h 에서 Empty + buttonVariants 로
+   이전 완료했다(실사용처 0곳 확인). 이걸로 Phase 4(4a~4h) 전 화면 이전이 끝났다 —
+   남은 CSS 는 :root 색 토큰과 body/a/h1,h2,h3 전역 규칙뿐이고, 이 둘은 Phase 5
+   (styles.css 삭제, index.css 로 완전 이관) 에서 정리한다. */
 }

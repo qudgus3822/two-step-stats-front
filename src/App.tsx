@@ -1,5 +1,9 @@
 import { Link, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
+// [변경: 2026-09-02 20:10, 김병현 수정] NotFound 가 .state/.state--empty/.link 대신
+// shadcn Empty + Button 룩(buttonVariants)을 쓴다(계획서 §7 Phase 4h).
+import { Empty } from './components/states';
+import { buttonVariants } from './components/ui/button';
 // [변경: 2026-07-27 16:40, 김병현 수정] 선수 비교 화면 라우트 추가.
 import { ComparePage } from './pages/ComparePage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -71,15 +75,17 @@ export function App() {
 }
 
 // 없는 주소로 왔을 때
+// [변경: 2026-09-02 20:10, 김병현 수정] .page/.state.state--empty/.link → Empty + Link
+// (buttonVariants 로 버튼처럼 스타일링). Button asChild 대신 buttonVariants 를 Link 에 직접
+// 적용한 이유는 UploadPage.tsx 와 같다 — 이 자리는 Radix 트리거 문맥이 아니라 순수 내비게이션
+// 링크라 asChild 자체는 안전하지만(Phase 2 에서 확인된 사실), 콘솔 경고까지 없애는 쪽을 택했다.
 function NotFound() {
   return (
-    <div className="page">
-      <div className="state state--empty">
-        <strong>페이지를 찾을 수 없어요</strong>
-        <Link className="link" to="/">
-          대시보드로 돌아가기
-        </Link>
-      </div>
-    </div>
+    <Empty>
+      <strong>페이지를 찾을 수 없어요</strong>
+      <Link to="/" className={buttonVariants({ variant: 'outline' })}>
+        대시보드로 돌아가기
+      </Link>
+    </Empty>
   );
 }
