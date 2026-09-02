@@ -7,6 +7,8 @@ import { GameDetailPage } from './pages/GameDetailPage';
 import { GamesPage } from './pages/GamesPage';
 // [변경: 2026-07-28 15:00, 김병현 수정] 기량 발전(직전 시즌 대비 상승률) 화면 라우트 추가.
 import { GrowthPage } from './pages/GrowthPage';
+// [신설: 2026-09-02 김병현 작성] 명예의 전당(우승 기록 보기 전용) 화면 라우트 추가.
+import { HallOfFamePage } from './pages/HallOfFamePage';
 // [신설: 2026-09-02 김병현 작성] 우승횟수 관리 화면 라우트 추가.
 import { ChampionshipPage } from './pages/ChampionshipPage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
@@ -36,6 +38,10 @@ export function App() {
         <Route path="synergy" element={<SynergyPage />} />
         {/* [변경: 2026-07-28 15:00, 김병현 수정] 기량 발전 화면. Layout 하위라 헤더의 대회 피커를 그대로 쓴다. */}
         <Route path="growth" element={<GrowthPage />} />
+        {/* [신설: 2026-09-02 김병현 작성] 명예의 전당 — 우승 기록 '보기 전용'.
+            /championships(운영자용, 게이트 뒤)와 짝이지만 이쪽은 누구나 볼 수 있다.
+            대회 필터와 무관한 통산 화면이라 헤더의 대회 피커를 쓰지 않는다. */}
+        <Route path="hall-of-fame" element={<HallOfFamePage />} />
         {/* [변경: 2026-07-27 12:15, 김병현 수정] 업로드는 오늘 비밀번호를 맞춰야 열린다.
             JSX 는 "설명서"일 뿐이라, 게이트가 children 을 반환하기 전까지 UploadPage 는
             마운트되지 않는다 = 훅도 쿼리도 하나도 실행되지 않는다. */}

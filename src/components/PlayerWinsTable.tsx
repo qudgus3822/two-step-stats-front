@@ -1,4 +1,7 @@
 import type { PlayerWins } from '../api/types';
+// [변경: 2026-09-02 김병현 수정] 표의 선수 이름은 이 저장소에선 전부 상세로 가는 링크다
+// (마우스만 올려도 그 선수 상세를 미리 받는다). 명예의 전당에서도 같은 표를 쓰므로 여기 붙인다.
+import { PlayerLink } from './PlayerLink';
 import { Empty } from './states';
 
 // [신설: 2026-09-02 김병현 작성] 선수별 통산 우승횟수 표.
@@ -35,7 +38,9 @@ export function PlayerWinsTable({ playerWins }: { playerWins: PlayerWins[] }) {
               {/* 서버가 이미 '많이 우승한 순'으로 정렬해 줬다 → 순서 그대로가 곧 순위다.
                   동률이면 같은 번호를 붙이는 진짜 등수 계산은 하지 않는다(여긴 순위표가 아니라 명단이다). */}
               <td className="col-rank">{i + 1}</td>
-              <td className="col-name strong">{p.player}</td>
+              <td className="col-name strong">
+                <PlayerLink name={p.player} />
+              </td>
               <td className="num strong">{p.wins}</td>
               <td className="muted">{p.titles.join(', ')}</td>
             </tr>

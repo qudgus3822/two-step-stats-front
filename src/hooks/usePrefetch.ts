@@ -40,8 +40,9 @@ export type PrefetchRoute =
   | '/leaderboard'
   | '/synergy'
   | '/growth'
-  // [변경: 2026-09-02 김병현 수정] 우승횟수 관리(운영자 메뉴).
-  | '/championships';
+  // [변경: 2026-09-02 김병현 수정] 우승횟수 관리(운영자 메뉴) · 명예의 전당(보기 전용).
+  | '/championships'
+  | '/hall-of-fame';
 
 // 프리페치가 알아야 하는 "지금 어느 대회를 보고 있나" 한 묶음.
 interface PrefetchScope {
@@ -102,6 +103,11 @@ const ROUTE_PREFETCH: Record<
     if (s.latestCompetitionId != null) {
       void qc.prefetchQuery(championshipRosterOptions(s.latestCompetitionId));
     }
+  },
+  // 명예의 전당은 통산 기록 하나만 쓴다. 관리 화면과 **같은 키**라 캐시를 그대로 나눠 쓴다
+  // (운영자가 관리 화면을 보다 이 탭에 와도 요청이 다시 나가지 않는다).
+  '/hall-of-fame': (qc) => {
+    void qc.prefetchQuery(championshipsOptions());
   },
 };
 

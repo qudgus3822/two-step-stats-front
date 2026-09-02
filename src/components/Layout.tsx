@@ -55,18 +55,18 @@ export function Layout() {
         <nav className="nav" aria-label="주요 메뉴">
           {/* [변경: 2026-07-29 10:36, 김병현 수정] 각 탭에 prefetchOn 추가 — 클릭 전에 미리 받는다. */}
           <NavLink to="/" end className={navClass} {...prefetchOn('/')}>
-            대시보드
+            경기 결과
           </NavLink>
           {/* <NavLink to="/games" className={navClass}>
             경기
           </NavLink> */}
-          <NavLink to="/players" className={navClass} {...prefetchOn('/players')}>
+          {/* <NavLink to="/players" className={navClass} {...prefetchOn('/players')}>
             선수
-          </NavLink>
+          </NavLink> */}
           {/* [변경: 2026-07-27 16:40, 김병현 수정] 선수 비교 화면 진입점. "선수" 다음에 추가. */}
-          <NavLink to="/compare" className={navClass} {...prefetchOn('/compare')}>
+          {/* <NavLink to="/compare" className={navClass} {...prefetchOn('/compare')}>
             선수 비교
-          </NavLink>
+          </NavLink> */}
           <NavLink to="/leaderboard" className={navClass} {...prefetchOn('/leaderboard')}>
             리더보드
           </NavLink>
@@ -77,6 +77,11 @@ export function Layout() {
           {/* [변경: 2026-07-28 15:00, 김병현 수정] 기량 발전(직전 시즌 대비 상승률) 탭 추가. "시너지" 다음. */}
           <NavLink to="/growth" className={navClass} {...prefetchOn('/growth')}>
             기량 발전
+          </NavLink>
+          {/* [신설: 2026-09-02 김병현 작성] 명예의 전당(역대 우승·통산 순위). 보기 전용이라
+              운영자 묶음이 아니라 일반 메뉴에 둔다. */}
+          <NavLink to="/hall-of-fame" className={navClass} {...prefetchOn('/hall-of-fame')}>
+            명예의 전당
           </NavLink>
         </nav>
 

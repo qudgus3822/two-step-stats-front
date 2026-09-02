@@ -413,3 +413,17 @@ export interface ChampionshipDownload {
   fileName: string; // 예: 'championships_20260902.xlsx'
   rowCount: number | null; // 우승 줄 수. 헤더를 못 읽었으면 null(= "모름", 0 과 구분)
 }
+
+// 한 대회의 우승 = 그 대회 우승 줄들을 도로 묶은 모양.
+// 서버는 '선수 한 명 = 한 줄'로 주는데, 사람이 보기엔 '대회 하나 = 한 팀'이 자연스럽다.
+// 그 되묶기는 프론트가 한다(lib/championships.ts) — 서버 응답을 화면 모양에 맞춰 두 벌로
+// 만들지 않으려고. 묶는 규칙이 화면에만 필요하면 화면 쪽에 두는 게 맞다.
+export interface ChampionshipGroup {
+  competitionId: number;
+  competitionLabel: string;
+  year: number;
+  seasonNo: number | null;
+  competitionName: string;
+  teamName: string; // 대표 팀 이름(줄들에 가장 많이 나온 이름)
+  players: string[];
+}

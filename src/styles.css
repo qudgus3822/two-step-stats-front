@@ -1377,3 +1377,59 @@ h3 {
   color: color-mix(in srgb, var(--draw) 72%, var(--text));
   font-size: 12px;
 }
+
+/* ── 명예의 전당(역대 우승 명단) ────────────────────────────────────────────
+   [신설: 2026-09-02 김병현 작성]
+   표가 아니라 카드+명단으로 그린다 — 대회마다 인원이 6~10명으로 제각각이라
+   표로 만들면 칸 수가 안 맞아 빈칸만 줄줄이 생긴다. */
+
+.hof-years {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.hof-year-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+.hof-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.hof-item {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--series-1) 4%, transparent);
+}
+.hof-item-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.hof-season {
+  font-weight: 700;
+  font-size: 13.5px;
+}
+.hof-count {
+  color: var(--muted);
+  font-size: 12.5px;
+  /* 인원 수는 부가 정보라 오른쪽 끝으로 밀어 둔다(팀 이름이 주인공). */
+  margin-left: auto;
+}
+/* 이름을 줄바꿈되는 목록으로. 이름 사이를 점으로 나누면 인원이 많아도 덩어리로 안 읽힌다. */
+.hof-players {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 13px;
+}
