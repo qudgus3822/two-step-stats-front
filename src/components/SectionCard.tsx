@@ -28,8 +28,12 @@ export function SectionCard({ title, note, action, children, className }: Sectio
       <CardHeader className={cn(action && 'flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between')}>
         <div className="min-w-0">
           {/* CardTitle(ui/card.tsx)은 <div> 라 대신 <h2> 를 직접 쓴다 — 페이지 제목(h1) 아래
-              섹션이라는 걸 스크린리더 헤딩 탐색에서도 알 수 있어야 한다. 클래스는 CardTitle 과 동일. */}
-          <h2 data-slot="card-title" className="font-heading text-base leading-snug font-medium">
+              섹션이라는 걸 스크린리더 헤딩 탐색에서도 알 수 있어야 한다.
+              [변경: 2026-09-02 15:50, 김병현 수정] 중계 그래픽 리디자인 Phase D — 굵기만
+              font-medium(500)→font-semibold(600)로 올렸다. 본문(CardContent, text-sm/400)과의
+              대비를 키우기 위해서다("카드 제목이 본문과 거의 같은 무게" 진단 해결).
+              그 외 클래스는 CardTitle 과 여전히 같다(크기·자간·줄간격은 안 바꿈). */}
+          <h2 data-slot="card-title" className="font-heading text-base leading-snug font-semibold">
             {title}
           </h2>
           {note && <CardDescription>{note}</CardDescription>}

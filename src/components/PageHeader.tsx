@@ -11,8 +11,10 @@ interface PageHeaderProps {
 export function PageHeader({ title, sub }: PageHeaderProps) {
   return (
     <div className="mb-5">
-      {/* 26px/650 → 24px/700(shadcn 스케일)로 승격, 자간은 유지(계획서 §D11) */}
-      <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+      {/* [변경: 2026-09-02 15:50, 김병현 수정] 중계 그래픽 리디자인(broadcast-redesign) Phase D —
+          26px/650(옛) → 24px/700(Phase 4a) → 30px/800(지금). 페이지 제목이 카드 제목·본문과
+          한눈에 구분되도록 위계를 한 단 더 올렸다(계획서 "타이포 위계 강화"). 자간은 그대로. */}
+      <h1 className="text-3xl font-extrabold tracking-tight">{title}</h1>
       {sub && <p className="mt-1.5 text-muted-foreground">{sub}</p>}
     </div>
   );

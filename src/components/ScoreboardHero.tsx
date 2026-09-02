@@ -19,7 +19,9 @@ export function ScoreboardHero({ box }: { box: GameBox }) {
   const { tokens } = useTheme();
 
   return (
-    <div className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
+    // [변경: 2026-09-02 15:50, 김병현 수정] data-slot="card" 추가 — Card(ui/card.tsx)와 같은
+    // 표면이라는 뜻으로, index.css 의 다크 카드 그림자 규칙(Phase D)이 여기도 똑같이 적용되게 한다.
+    <div data-slot="card" className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
       {/* 어느 경기인지 — 시각적으로는 작지만, 시맨틱으로는 이 섹션의 h2(옛 "경기 단위 통계"
           제목 자리를 대신한다. 헤딩 탐색을 쓰는 스크린리더 사용자에게 "무슨 경기인지"를
           바로 알려주는 편이 일반 이름표보다 더 유용하다는 판단. */}
