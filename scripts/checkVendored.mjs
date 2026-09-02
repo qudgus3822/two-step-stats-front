@@ -5,11 +5,10 @@
 // shadcn add -o 나 CLI 업그레이드가 이 수정을 덮으면 표의 키보드 스크롤·페이드가 죽는데,
 // 표는 여전히 스크롤돼서 화면으로는 안 보인다. 그래서 빌드를 세운다.
 //
-// ⚠ [Phase 1 시점 주의] 이 스크립트는 아직 package.json 의 prebuild 에 연결하지 않았다.
-// ui/table.tsx 의 컨테이너 제거는 Phase 3b 에서 이뤄진다 — 그 전(Phase 1~2)에는 컨테이너가
-// 아직 그대로 있어서, 지금 이 스크립트를 prebuild 에 걸면 원본 상태를 "깨졌다"고
-// 오판해 빌드가 항상 막힌다. Phase 3b 담당자가 table.tsx 를 고친 뒤 이 스크립트를
-// prebuild 에 연결한다("node scripts/checkPalette.mjs && node scripts/checkVendored.mjs").
+// [변경: 2026-09-02 15:55, 김병현 수정] Phase 3b 에서 ui/table.tsx 컨테이너를 제거하면서
+// 이 스크립트를 package.json 의 prebuild 에 연결했다
+// ("node scripts/checkPalette.mjs && node scripts/checkVendored.mjs").
+// 일부러 컨테이너를 되살려 빌드가 실제로 막히는 것까지 확인한 뒤 되돌렸다(§ 검증 기록).
 import { readFileSync } from 'node:fs';
 
 const TABLE = 'src/components/ui/table.tsx';

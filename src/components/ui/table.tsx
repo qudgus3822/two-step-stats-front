@@ -4,18 +4,19 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+// [변경: 2026-09-02 15:50, 김병현 수정] 바깥 스크롤 컨테이너 div 제거.
+// 왜: 이 프로젝트는 표를 전부 TableScroller 로 감싼다. 컨테이너가 둘이면 안쪽이 스크롤을
+//     먹어 바깥의 스크롤 힌트(scroll-fade-x)와 키보드 스크롤(tabIndex)이 죽는다.
+//     스크롤 주인은 언제나 TableScroller 하나다(계획서 §D9).
+// ⚠ 이 파일은 shadcn 생성 코드다 — `add table --diff` 를 돌리면 이 줄이 차이로 뜬다(정상).
+//   scripts/checkVendored.mjs 가 이 수정이 되살아나는지 상시 감시한다(Phase 3b 부터 prebuild 연결).
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
-    <div
-      data-slot="table-container"
-      className="relative w-full overflow-x-auto"
-    >
-      <table
-        data-slot="table"
-        className={cn("w-full caption-bottom text-sm", className)}
-        {...props}
-      />
-    </div>
+    <table
+      data-slot="table"
+      className={cn("w-full caption-bottom text-sm", className)}
+      {...props}
+    />
   )
 }
 

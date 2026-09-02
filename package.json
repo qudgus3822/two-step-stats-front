@@ -6,7 +6,7 @@
   "description": "투스텝 스탯 API(농구 동호회 기록)를 시각화하는 React + Vite 대시보드",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/checkPalette.mjs",
+    "prebuild": "node scripts/checkPalette.mjs && node scripts/checkVendored.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
