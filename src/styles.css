@@ -945,10 +945,18 @@ h3 {
 .compare-field-caption {
   color: var(--muted);
 }
-/* [삭제: 2026-09-02 16:30, 김병현 수정] .compare-table/.compare-metric/.compare-side--*/
-   .compare-value/.compare-hint/.is-better(.is-left/.is-right)/.compare-swatch--* —
-   CompareTable.tsx 가 shadcn Table + Tailwind 유틸리티로 이전 완료(계획서 §7 Phase 3c).
-   .compare-picker/.compare-field/.compare-field-caption 은 ComparePage.tsx(Phase 4)가
+/* [변경: 2026-09-02 17:40, 김병현 수정] 아래 주석이 CSS 를 깨뜨리던 것을 고쳤다.
+   원래 첫 줄이 ".compare-side--*" 로 끝났는데, 별표+슬래시가 곧 주석 닫기(별표 슬래시)라
+   주석이 여기서 끝나 버렸다. 그 바람에 나머지 설명 줄이 CSS 로 새어나가 선택자가 되었고,
+   바로 뒤의 max-width:560px 미디어쿼리를 통째로 삼켜 .game-row 2단 배치와 .game-meta 숨김이
+   폰에서 안 먹었다. 주석 안에서는 별표 바로 뒤에 슬래시를 쓰지 않는다.
+
+   [삭제: 2026-09-02 16:30, 김병현 수정]
+   .compare-table, .compare-metric, .compare-side--left, .compare-side--right,
+   .compare-value, .compare-hint, .is-better(.is-left, .is-right), .compare-swatch--left,
+   .compare-swatch--right — CompareTable.tsx 가 shadcn Table + Tailwind 유틸리티로
+   이전 완료(계획서 §7 Phase 3c).
+   .compare-picker, .compare-field, .compare-field-caption 은 ComparePage.tsx(Phase 4)가
    아직 원문 그대로 쓰고 있어서 남겨 둔다. */
 
 @media (max-width: 560px) {
