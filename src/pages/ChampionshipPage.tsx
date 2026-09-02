@@ -16,6 +16,12 @@ import { PlayerWinsTable } from '../components/PlayerWinsTable';
 import { WinlessPlayersTable } from '../components/WinlessPlayersTable';
 import { splitByWins } from '../lib/championships';
 import { Empty, ErrorView, TableSkeleton } from '../components/states';
+// [변경: 2026-09-02 19:20, 김병현 수정] 아래 4줄 — 계획서 §7 Phase 4f.
+// .page* → PageHeader, .card* → SectionCard, .field.season-field+.select → NativeSelect,
+// .field-hint → text-xs text-muted-foreground.
+import { PageHeader } from '../components/PageHeader';
+import { SectionCard } from '../components/SectionCard';
+import { NativeSelect, NativeSelectOption } from '../components/ui/native-select';
 
 // [신설: 2026-09-02 김병현 작성] 우승횟수 관리 화면.
 //
@@ -81,14 +87,16 @@ export function ChampionshipPage() {
   const wonCount = roster ? roster.players.filter((p) => p.won).length : 0;
 
   return (
-    <div className="page">
-      <div className="page-head">
-        <h1 className="page-title">우승횟수 관리</h1>
-        <p className="page-sub">
-          대회에서 뛴 선수 중 우승한 사람 옆의 <b>+</b> 를 누르면 통산 우승횟수가 올라가요.
-          상대팀으로 한 경기만 뛴 선수나 용병은 자동으로 들어가지 않아요 — 직접 골라 주세요.
-        </p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="우승횟수 관리"
+        sub={
+          <>
+            대회에서 뛴 선수 중 우승한 사람 옆의 <b>+</b> 를 누르면 통산 우승횟수가 올라가요.
+            상대팀으로 한 경기만 뛴 선수나 용병은 자동으로 들어가지 않아요 — 직접 골라 주세요.
+          </>
+        }
+      />
 
       {competitionsError && <ErrorView message={competitionsError} />}
 
@@ -100,40 +108,37 @@ export function ChampionshipPage() {
       )}
 
       {competitions.length > 0 && (
-        <section className="card">
-          <div className="card-head">
-            <h2 className="card-title">출전 선수</h2>
-            <span className="card-note">
-              {roster
-                ? `${roster.players.length}명 중 우승자 ${wonCount}명 · 전체 ${roster.gameCount}경기`
-                : '불러오는 중…'}
-            </span>
-          </div>
-
-          <div className="export-controls">
-            <label className="field season-field">
-              <span className="field-label">대회</span>
-              <select
-                className="select"
+        <SectionCard
+          title="출전 선수"
+          note={
+            roster
+              ? `${roster.players.length}명 중 우승자 ${wonCount}명 · 전체 ${roster.gameCount}경기`
+              : '불러오는 중…'
+          }
+        >
+          <div className="flex flex-wrap items-end gap-2.5">
+            <label className="flex flex-col gap-1.5 text-sm">
+              <span className="font-medium">대회</span>
+              <NativeSelect
                 value={scopeId ?? ''}
                 onChange={(e) => setPickedId(Number(e.target.value))}
                 aria-label="우승을 등록할 대회 선택"
               >
                 {competitions.map((c) => (
-                  <option key={c.id} value={String(c.id)}>
+                  <NativeSelectOption key={c.id} value={String(c.id)}>
                     {c.label}
-                  </option>
+                  </NativeSelectOption>
                 ))}
-              </select>
+              </NativeSelect>
             </label>
-            <span className="field-hint">
+            <span className="pb-1.5 text-xs text-muted-foreground">
               이 선택은 이 화면에서만 써요 — 위쪽 대회 선택과 따로 움직여요.
             </span>
           </div>
 
           {/* 뮤테이션 에러(예: 그 대회에서 뛴 기록이 없는 이름)는 표 위에 그대로 보여준다. */}
           {toggleMutation.error && (
-            <div className="upload-feedback">
+            <div className="mt-3.5">
               <ErrorView message={toggleMutation.error.message} />
             </div>
           )}
@@ -155,17 +160,13 @@ export function ChampionshipPage() {
               onToggle={handleToggle}
             />
           )}
-        </section>
+        </SectionCard>
       )}
 
-      <section className="card">
-        <div className="card-head">
-          <h2 className="card-title">통산 우승횟수</h2>
-          <span className="card-note">
-            {overview ? `우승 ${overview.wins.length}건 · 우승 경험 ${winners.length}명` : ''}
-          </span>
-        </div>
-
+      <SectionCard
+        title="통산 우승횟수"
+        note={overview ? `우승 ${overview.wins.length}건 · 우승 경험 ${winners.length}명` : ''}
+      >
         {championshipsQuery.error && (
           <ErrorView
             message={championshipsQuery.error.message}
@@ -174,18 +175,15 @@ export function ChampionshipPage() {
         )}
         {championshipsQuery.isLoading && <TableSkeleton rows={8} cols={6} />}
         {overview && !championshipsQuery.error && <PlayerWinsTable winners={winners} />}
-      </section>
+      </SectionCard>
 
-      <section className="card">
-        <div className="card-head">
-          <h2 className="card-title">아직 우승이 없어요 ㅜ.ㅜ</h2>
-          <span className="card-note">
-            {overview ? `${winless.length}명 · 오래 뛴 순` : ''}
-          </span>
-        </div>
+      <SectionCard
+        title="아직 우승이 없어요 ㅜ.ㅜ"
+        note={overview ? `${winless.length}명 · 오래 뛴 순` : ''}
+      >
         {championshipsQuery.isLoading && <TableSkeleton rows={6} cols={2} />}
         {overview && !championshipsQuery.error && <WinlessPlayersTable winless={winless} />}
-      </section>
+      </SectionCard>
 
       <ChampionshipExportCard />
     </div>
