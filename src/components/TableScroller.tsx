@@ -31,7 +31,16 @@ export function TableScroller({ children, label, stale, className }: TableScroll
       aria-busy={stale ? true : undefined}
       tabIndex={0}
       className={cn(
-        'scroll-fade-x overflow-x-auto rounded-lg',
+        // [변경: 2026-09-02 18:10, 김병현 수정] relative 추가 — 계획서 §7 Phase 4c 에서 실측으로 찾은
+        // 버그. Tailwind 의 sr-only 는 position:absolute 다. 이 상자 안(표 안)에 sr-only 가 있는데
+        // 이 상자에 position 이 없으면, 그 sr-only 는 "위치 기준(containing block)"을 이 상자가 아니라
+        // 더 위(포지션 있는 조상이 없으면 문서 루트)로 잡는다. 그러면 overflow-x-auto 가 있어도
+        // 그 sr-only 는 클리핑을 안 받고, 표가 넓을 때(예: 마지막 칸 안의 sr-only) 그 좌표가
+        // 그대로 document.scrollWidth 를 밀어 올려 "표는 안 넘치는데 페이지가 가로로 넘친다"가
+        // 된다. SynergyPage/GrowthPage(548px/607px 넘침)에서 실측으로 확인 — sr-only span 의
+        // getBoundingClientRect().left 가 546px 로, 뷰포트(390px) 밖에 그려지고 있었다.
+        // relative 하나로 이 상자가 containing block 이 되어 sr-only 도 여기서 클리핑된다.
+        'relative scroll-fade-x overflow-x-auto rounded-lg',
         stale && 'opacity-55 transition-opacity',
         className,
       )}

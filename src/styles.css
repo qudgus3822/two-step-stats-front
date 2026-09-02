@@ -242,29 +242,9 @@ h3 {
   text-decoration: underline;
 }
 
-/* ── 뱃지 ────────────────────────────────────────────────────── */
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 2px 9px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 650;
-  line-height: 1.7;
-}
-/* [삭제: 2026-09-02 16:30, 김병현 수정] .badge--win — ChampionshipRosterTable.tsx 가
-   shadcn Badge variant="win" 으로 이전 완료(계획서 §7 Phase 3c). */
-/* [삭제: 2026-09-02 15:40, 김병현 수정] .badge--loss/--draw/--overtime, .badge-dot —
-   Badge.tsx(ResultBadge/OvertimeBadge/TeamBadge)가 shadcn Badge variant + 인라인
-   Tailwind 클래스로 이전 완료(계획서 §7 Phase 3a). .badge/.badge--win/--team 은
-   GrowthPage.tsx·SynergyPage.tsx·ChampionshipRosterTable.tsx 가 아직 원문 그대로
-   쓰고 있어서(Phase 3c·4) 남겨 둔다. */
-.badge--team {
-  background: color-mix(in srgb, var(--text) 8%, transparent);
-  color: var(--text-2);
-}
+/* [삭제: 2026-09-02 18:20, 김병현 수정] .badge/.badge--team — GrowthPage.tsx·SynergyPage.tsx
+   가 shadcn Badge(variant="team")로 이전 완료(계획서 §7 Phase 4c). 실사용처 0곳 확인
+   (grep으로 raw className="badge..." 재확인 완료). */
 
 /* ── 버튼 / 입력 ─────────────────────────────────────────────── */
 
@@ -322,36 +302,8 @@ h3 {
    ⚠ 주의: 이 주석 안에서 별표(*) 바로 뒤에 슬래시(/)를 쓰면 주석이 여기서 끝나버린다
    (앞선 사고 — 세션 파일 기록). 클래스 이름을 나열할 땐 "*" 대신 "계열"/쉼표로 쓴다. */
 
-/* ── 리더보드 지표 탭 ─────────────────────────────────────────── */
-
-.metric-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 18px;
-}
-.metric-tab {
-  appearance: none;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text-2);
-  padding: 6px 12px;
-  border-radius: 999px;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 550;
-  cursor: pointer;
-  transition: all 0.14s;
-}
-.metric-tab:hover {
-  color: var(--text);
-  border-color: var(--baseline);
-}
-.metric-tab.is-active {
-  background: var(--series-1);
-  border-color: var(--series-1);
-  color: #fff;
-}
+/* [삭제: 2026-09-02 18:20, 김병현 수정] .metric-tabs/.metric-tab/.is-active — Leaderboard·
+   Synergy·Growth 세 화면 전부 useMetricTabs(Radix Tabs)로 이전 완료(계획서 §7 Phase 4b·4c). */
 
 /* ── 경기 목록 ───────────────────────────────────────────────── */
 
@@ -926,94 +878,20 @@ h3 {
   }
 }
 
-/* ── 시너지 화면 ─────────────────────────────────────────────── */
-/* [신설: 2026-07-27 16:14, 김병현 작성] 시너지 탭 스타일. 새 색 변수는 안 만들고 기존 토큰만 쓴다. */
+/* [삭제: 2026-09-02 18:20, 김병현 수정] .synergy-controls/-pick/-pick-caption/-note,
+   .link-btn(:hover, [aria-expanded]) — SynergyPage.tsx 가 NativeSelect + useMetricTabs +
+   Button(variant=link) + Tailwind 유틸리티로 이전 완료(계획서 §7 Phase 4c). */
 
-.synergy-controls {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
-}
-.synergy-pick {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 13px;
-}
-.synergy-pick-caption {
-  color: var(--muted);
-}
-.synergy-pick .select {
-  max-width: 260px;
-}
-.synergy-note {
-  margin: 12px 0 0;
-  color: var(--muted);
-  font-size: 12.5px;
-}
-
-/* 표 안에서 링크처럼 보이는 버튼(키보드 접근 가능한 '펼치기' 액션) */
-.link-btn {
-  appearance: none;
-  border: 0;
-  background: none;
-  padding: 0;
-  font: inherit;
-  color: var(--series-1);
-  font-weight: 550;
-  cursor: pointer;
-}
-.link-btn:hover {
-  text-decoration: underline;
-}
-.link-btn[aria-expanded='true'] {
-  text-decoration: underline;
-}
-
-/* 지표·기준 선수·대회를 바꿔 새 데이터를 받는 동안(결정 9). 이전 표를 지우지 않고 흐리게만 한다. */
+/* 지표·기준 선수·대회를 바꿔 새 데이터를 받는 동안(결정 9). 이전 표를 지우지 않고 흐리게만 한다.
+   ComparePage/GameDetailPage/GamesPage/PlayersPage(Phase 4d·4e)가 아직 원문 그대로 쓴다. */
 .is-stale {
   opacity: 0.55;
   transition: opacity 120ms ease;
 }
 
-.row-muted td {
-  opacity: 0.62;
-} /* 표본 부족 행 */
-.row-picked {
-  background: color-mix(in srgb, var(--series-1) 10%, transparent);
-}
-
-.delta-good {
-  color: var(--good);
-}
-.delta-bad {
-  color: var(--loss);
-}
-.delta-flat {
-  color: var(--muted);
-}
-
-/* ── 기량 발전 화면 ─────────────────────────────────────────── */
-/* [신설: 2026-07-28 15:00, 김병현 작성] 대부분 기존 클래스를 재사용하고, 안내 문구 2종만 더한다.
-   (.synergy-note 를 그대로 쓰지 않는 이유: 다른 기능 이름의 클래스를 빌려 쓰면 나중에
-    시너지 스타일을 고칠 때 이 화면이 같이 흔들린다.) */
-.growth-note {
-  margin: 12px 0 0;
-  color: var(--muted);
-  font-size: 12.5px;
-}
-/* 헤더가 '전체 대회'라서 다른 대회 기준으로 보고 있다는 안내 배너 */
-.growth-scope-note {
-  margin: 0 0 14px;
-  padding: 10px 12px;
-  border-left: 3px solid var(--series-1);
-  background: color-mix(in srgb, var(--series-1) 8%, transparent);
-  color: var(--muted);
-  font-size: 12.5px;
-  border-radius: 6px;
-}
+/* [삭제: 2026-09-02 18:20, 김병현 수정] .row-muted/.row-picked/.delta-good/-bad/-flat,
+   .growth-note/.growth-scope-note — SynergyPage.tsx·GrowthPage.tsx 가 Tailwind 유틸리티
+   (opacity-60/bg-primary\/10/text-win 등) + Alert 로 이전 완료(계획서 §7 Phase 4c). */
 
 /* ── 우승횟수 관리 ─────────────────────────────────────────────────────────
    [신설: 2026-09-02 김병현 작성]

@@ -31,6 +31,25 @@ import {
   METRIC_LABELS,
   deltaTone,
 } from "../lib/format";
+// [변경: 2026-09-02 17:50, 김병현 수정] 아래 7줄 — 계획서 §7 Phase 4c.
+// .page* → PageHeader, .metric-tabs* → useMetricTabs, .card* → SectionCard,
+// .table-wrap/.table → TableScroller + shadcn Table, .growth-scope-note → Alert,
+// .badge → Badge(variant=team).
+import { PageHeader } from "../components/PageHeader";
+import { SectionCard } from "../components/SectionCard";
+import { useMetricTabs } from "../components/MetricTabs";
+import { TableScroller } from "../components/TableScroller";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
+import { Alert, AlertDescription } from "../components/ui/alert";
+import { Badge } from "../components/ui/badge";
+import { cn } from "../lib/utils";
+
+// 발전률(delta) 톤 → 색 토큰. 시너지·기량발전 두 화면이 같은 규칙을 쓴다.
+const DELTA_CLASS: Record<"good" | "bad" | "flat", string> = {
+  good: "text-win",
+  bad: "text-loss",
+  flat: "text-muted-foreground",
+};
 
 export function GrowthPage() {
   const { competitionId, competitions, labelOf, loading, error } =
@@ -57,12 +76,23 @@ export function GrowthPage() {
 
   const scopeLabel = labelOf(scopeId) ?? "대회 확인 중";
 
+  // [신설: 2026-09-02 17:50, 김병현 작성] 탭 UI + 탭↔패널 ARIA 연결을 useMetricTabs 가 대신 짜 준다.
+  // 옛 화면은 aria-labelledby 방향만 있었다(탭 id 는 있었지만 aria-controls/패널 id 는 없었음,
+  // 계획서 §9-6) — useMetricTabs 로 바꾸며 양방향이 채워진다.
+  const { tabs, panelProps } = useMetricTabs({
+    metrics: GROWTH_METRICS,
+    labels: METRIC_LABELS,
+    value: metric,
+    onChange: setMetric,
+    ariaLabel: "기량 발전 지표",
+  });
+
   return (
-    <div className="page">
-      <div className="page-head">
-        <h1 className="page-title">기량 발전</h1>
-        <p className="page-sub">
-          {report ? (
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="기량 발전"
+        sub={
+          report ? (
             <>
               {report.current.label} ← 직전: {report.previous?.label ?? "없음"}{" "}
               · 이번 {report.current.games}경기 · 직전{" "}
@@ -71,15 +101,18 @@ export function GrowthPage() {
             </>
           ) : (
             scopeLabel
-          )}
-        </p>
-      </div>
+          )
+        }
+      />
 
       {usingFallback && (
-        <p className="growth-scope-note">
-          헤더가 '전체 대회'라서 <strong>{scopeLabel}</strong> 기준으로 보고
-          있어요. 헤더에서 대회를 바꾸면 그 대회 기준으로 바뀝니다.
-        </p>
+        // [변경: 2026-09-02 17:50, 김병현 수정] .growth-scope-note → Alert(계획서 §5-5).
+        <Alert className="border-l-[3px] border-l-primary">
+          <AlertDescription>
+            헤더가 '전체 대회'라서 <strong>{scopeLabel}</strong> 기준으로 보고
+            있어요. 헤더에서 대회를 바꾸면 그 대회 기준으로 바뀝니다.
+          </AlertDescription>
+        </Alert>
       )}
 
       {loading && <Loading />}
@@ -126,31 +159,12 @@ export function GrowthPage() {
             report.previous.games > 0 &&
             report.rows.length > 0 && (
               <>
-                <div
-                  className="metric-tabs"
-                  role="tablist"
-                  aria-label="기량 발전 지표"
-                >
-                  {GROWTH_METRICS.map((m) => (
-                    <button
-                      key={m}
-                      id={`growth-tab-${m}`}
-                      type="button"
-                      role="tab"
-                      aria-selected={m === metric}
-                      className={`metric-tab ${m === metric ? "is-active" : ""}`}
-                      onClick={() => setMetric(m)}
-                    >
-                      {METRIC_LABELS[m]}
-                    </button>
-                  ))}
-                </div>
+                {tabs}
 
                 <div
-                  className={stale ? "is-stale" : ""}
+                  {...panelProps}
+                  className={cn(stale && "opacity-55 transition-opacity")}
                   aria-busy={stale}
-                  role="tabpanel"
-                  aria-labelledby={`growth-tab-${metric}`}
                 >
                   <GrowthTable report={report} metric={metric} />
                 </div>
@@ -177,40 +191,41 @@ function GrowthTable({
   const view = GROWTH_KIND_VIEW[report.kinds[metric]];
 
   return (
-    <section className="card">
-      <div className="card-head">
-        <h2 className="card-title">발전 순위 — {METRIC_LABELS[metric]}</h2>
-        <span className="card-note">
+    <SectionCard
+      title={`발전 순위 — ${METRIC_LABELS[metric]}`}
+      note={
+        <>
           직전 시즌 대비 · {view.cardNote}
           {report.betterWhen[metric] === "lower" &&
             " (낮을수록 좋은 지표라 줄어들면 +)"}
-        </span>
-      </div>
-      <div className="table-wrap">
-        <table className="table">
-          <thead>
-            <tr>
-              <th scope="col" className="col-rank">
+        </>
+      }
+    >
+      <TableScroller label="기량 발전 순위">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead scope="col" className="w-10 text-right">
                 #
-              </th>
-              <th scope="col" className="col-name">
+              </TableHead>
+              <TableHead scope="col" className="text-left">
                 선수
-              </th>
-              <th scope="col">직전 경기</th>
-              <th scope="col">이번 경기</th>
-              <th scope="col">직전 {view.valueColumnWord}</th>
-              <th scope="col">이번 {view.valueColumnWord}</th>
-              <th scope="col">{view.deltaColumnLabel}</th>
-            </tr>
-          </thead>
-          <tbody>
+              </TableHead>
+              <TableHead scope="col" className="text-right">직전 경기</TableHead>
+              <TableHead scope="col" className="text-right">이번 경기</TableHead>
+              <TableHead scope="col" className="text-right">직전 {view.valueColumnWord}</TableHead>
+              <TableHead scope="col" className="text-right">이번 {view.valueColumnWord}</TableHead>
+              <TableHead scope="col" className="text-right">{view.deltaColumnLabel}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {report.rows.map((row) => (
               <GrowthTableRow key={row.player} row={row} metric={metric} view={view} />
             ))}
-          </tbody>
-        </table>
-      </div>
-      <p className="growth-note">
+          </TableBody>
+        </Table>
+      </TableScroller>
+      <p className="mt-3 text-xs text-muted-foreground">
         발전률은 "직전 시즌보다 얼마나 좋아졌나"예요. 턴오버처럼 낮아야 좋은
         지표는 줄어들면 +가 됩니다.{" "}
         {/* [변경: 2026-07-28 18:00, 김병현 수정] v3.1 구현 리뷰 D1 — "직전 값이 0이면 —" 문장이
@@ -231,7 +246,7 @@ function GrowthTable({
             읽어도 안전하다). */}
         {view.extraNotes(report.minAttempts[metric]).map((note) => ` ${note}`)}
       </p>
-    </section>
+    </SectionCard>
   );
 }
 
@@ -252,29 +267,39 @@ function GrowthTableRow({
   const basisLabel = GROWTH_BASIS_LABELS[s.basis];
 
   return (
-    <tr className={row.rank == null ? "row-muted" : ""}>
-      <td className="num muted">{row.rank ?? "—"}</td>
-      <td className="col-name">
+    <TableRow className={cn(row.rank == null && "opacity-60")}>
+      <TableCell className="text-right tabular-nums text-muted-foreground">
+        {row.rank ?? "—"}
+      </TableCell>
+      <TableCell className="text-left">
         <PlayerLink name={row.player} />
-        {row.isNew && <span className="badge badge--team">신규</span>}
+        {row.isNew && (
+          <Badge variant="team" className="ml-1.5">
+            신규
+          </Badge>
+        )}
         {/* [변경: 2026-07-28 17:00, 김병현 수정] v3.1 — !qualified 대신 unqualifiedBy 로 뱃지를
             고른다(AC 50). 카운트 탭은 games 뿐이라 문구가 v2 와 똑같다(표본 부족) — 회귀 없음. */}
         {!row.isNew && row.unqualifiedBy !== "none" && (
-          <span className="badge badge--team">
+          <Badge variant="team" className="ml-1.5">
             {GROWTH_UNQUALIFIED_LABELS[row.unqualifiedBy]}
-          </span>
+          </Badge>
         )}
-      </td>
-      <td className="num muted">{row.prevGames}</td>
-      <td className="num">{row.currGames}</td>
-      <td className="num muted">
+      </TableCell>
+      <TableCell className="text-right tabular-nums text-muted-foreground">
+        {row.prevGames}
+      </TableCell>
+      <TableCell className="text-right tabular-nums">{row.currGames}</TableCell>
+      <TableCell className="text-right tabular-nums text-muted-foreground">
         {s.prev == null ? "—" : view.formatValue(s.prev)}
-      </td>
-      <td className="num">{s.curr == null ? "—" : view.formatValue(s.curr)}</td>
-      <td className={`num strong delta-${tone}`}>
+      </TableCell>
+      <TableCell className="text-right tabular-nums">
+        {s.curr == null ? "—" : view.formatValue(s.curr)}
+      </TableCell>
+      <TableCell className={cn("text-right font-semibold tabular-nums", DELTA_CLASS[tone])}>
         {s.pct == null ? (
           <>
-            — <span className="muted">{basisLabel}</span>
+            — <span className="text-muted-foreground">{basisLabel}</span>
           </>
         ) : (
           <>
@@ -290,7 +315,7 @@ function GrowthTableRow({
             )}
           </>
         )}
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }

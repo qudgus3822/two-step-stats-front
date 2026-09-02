@@ -46,8 +46,14 @@ export function useMetricTabs<M extends string>({
   onChange,
   ariaLabel,
 }: MetricTabsProps<M>): MetricTabsResult {
-  const panelId = `metric-panel-${ariaLabel}`;
-  const tabId = (m: M) => `metric-tab-${ariaLabel}-${m}`;
+  // [변경: 2026-09-02 18:10, 김병현 수정] id 에 공백이 들어가면 안 된다(HTML 무효 — id 는
+  // 공백 없는 토큰이어야 한다). ariaLabel(예: "시너지 지표")을 그대로 id 에 넣으면
+  // `id="metric-panel-시너지 지표"`처럼 공백 섞인 id 가 생긴다. 실측(Phase 4c)에서
+  // aria-controls/aria-labelledby 매칭 자체는 문자열이 같으면 동작하지만, HTML 표준을
+  // 어기는 값이라 다른 도구(CSS #id 선택자 등)에서 깨질 수 있어 공백만 제거한다.
+  const slug = ariaLabel.replace(/\s+/g, '-');
+  const panelId = `metric-panel-${slug}`;
+  const tabId = (m: M) => `metric-tab-${slug}-${m}`;
 
   const tabs = (
     <Tabs value={value} onValueChange={(v) => onChange(v as M)} activationMode="manual">
