@@ -79,6 +79,11 @@ export const efficiency = (box: BoxScore): number =>
 // [변경: 2026-07-15 13:01, 김병현 수정] 성공률을 "%" 문자열로. 리더보드 비율 차트/표 표시용.
 export const formatPct = (n: number): string => `${n}%`;
 
+// [신설: 2026-09-02 15:20, 김병현 작성] 성공률(%) 문자열, 시도 0(=null)이면 "—".
+// GameStatsPanel(팀 요약 표)·BoxScoreTable 이 각자 들고 있던 동일한 로컬 헬퍼를 하나로 모았다
+// (formatPct 는 null 을 안 받는 다른 계약이라 그대로 두고 이름을 다르게 뽑는다).
+export const formatPctOrDash = (p: number | null): string => (p == null ? '—' : `${p}%`);
+
 // [변경: 2026-07-27 16:14, 김병현 수정] 시너지 델타 표시 — 부호를 붙여 방향이 바로 보이게. 0은 "0.0".
 export const formatDelta = (n: number): string => `${n > 0 ? '+' : ''}${n.toFixed(1)}`;
 
