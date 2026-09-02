@@ -12,9 +12,6 @@ import { useCompetition } from '../context/CompetitionContext';
 import { ChampionshipExportCard } from '../components/ChampionshipExportCard';
 import { ChampionshipRosterTable } from '../components/ChampionshipRosterTable';
 import { PlayerWinsTable } from '../components/PlayerWinsTable';
-// [변경: 2026-09-02 김병현 수정] 우승자 표와 '아직 우승 없음' 표를 나눴다.
-import { WinlessPlayersTable } from '../components/WinlessPlayersTable';
-import { splitByWins } from '../lib/championships';
 import { Empty, ErrorView, TableSkeleton } from '../components/states';
 // [변경: 2026-09-02 19:20, 김병현 수정] 아래 4줄 — 계획서 §7 Phase 4f.
 // .page* → PageHeader, .card* → SectionCard, .field.season-field+.select → NativeSelect,
@@ -82,8 +79,9 @@ export function ChampionshipPage() {
 
   const roster = rosterQuery.data ?? null;
   const overview = championshipsQuery.data ?? null;
-  // 명예의 전당과 완전히 같은 가르기 규칙을 쓴다(복제하지 않고 lib 함수 재사용).
-  const { winners, winless } = splitByWins(overview?.playerWins ?? []);
+  // [변경: 2026-09-02 21:10, 김병현 수정] 우승 0회를 따로 가르지 않고 한 표에 다 넣는다
+  // (명예의 전당과 같은 방식). 서버가 준 순서 그대로 쓴다.
+  const playerWins = overview?.playerWins ?? [];
   const wonCount = roster ? roster.players.filter((p) => p.won).length : 0;
 
   return (
@@ -165,7 +163,13 @@ export function ChampionshipPage() {
 
       <SectionCard
         title="통산 우승횟수"
-        note={overview ? `우승 ${overview.wins.length}건 · 우승 경험 ${winners.length}명` : ''}
+        note={
+          overview
+            ? `우승 ${overview.wins.length}건 · 선수 ${playerWins.length}명 중 우승 경험 ${
+                playerWins.filter((p) => p.wins > 0).length
+              }명`
+            : ''
+        }
       >
         {championshipsQuery.error && (
           <ErrorView
@@ -174,15 +178,7 @@ export function ChampionshipPage() {
           />
         )}
         {championshipsQuery.isLoading && <TableSkeleton rows={8} cols={6} />}
-        {overview && !championshipsQuery.error && <PlayerWinsTable winners={winners} />}
-      </SectionCard>
-
-      <SectionCard
-        title="아직 우승이 없어요 ㅜ.ㅜ"
-        note={overview ? `${winless.length}명 · 오래 뛴 순` : ''}
-      >
-        {championshipsQuery.isLoading && <TableSkeleton rows={6} cols={2} />}
-        {overview && !championshipsQuery.error && <WinlessPlayersTable winless={winless} />}
+        {overview && !championshipsQuery.error && <PlayerWinsTable players={playerWins} />}
       </SectionCard>
 
       <ChampionshipExportCard />
