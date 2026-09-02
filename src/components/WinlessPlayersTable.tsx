@@ -1,6 +1,16 @@
 import type { PlayerWins } from '../api/types';
 import { PlayerLink } from './PlayerLink';
 import { Empty } from './states';
+import { TableScroller } from './TableScroller';
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from './ui/table';
 
 // [신설: 2026-09-02 김병현 작성] 아직 우승이 없는 선수 명단.
 //
@@ -10,7 +20,9 @@ import { Empty } from './states';
 // 칸이 우승자 표보다 적은 것도 같은 이유다. 우승이 전부 0이라 '우승' 칸은 0만 늘어놓는
 // 죽은 칸이고, 승률도 전부 0.0% 라 마찬가지다. 여기서 뜻이 있는 건 **뛴 시즌 수** 하나다
 // ("12시즌 뛰었는데 아직" 이 이 표가 하려는 이야기다).
-
+//
+// [변경: 2026-09-02 16:20, 김병현 수정] .table-wrap → TableScroller, <table> → shadcn Table
+// (계획서 §7 Phase 3c). caption sr-only 유지.
 export function WinlessPlayersTable({ winless }: { winless: PlayerWins[] }) {
   if (winless.length === 0) {
     return (
@@ -22,27 +34,29 @@ export function WinlessPlayersTable({ winless }: { winless: PlayerWins[] }) {
   }
 
   return (
-    <div className="table-wrap">
-      <table className="table">
-        <caption className="sr-only">아직 우승이 없는 선수 {winless.length}명</caption>
-        <thead>
-          <tr>
-            <th className="col-name">선수</th>
+    <TableScroller label="아직 우승이 없는 선수">
+      <Table>
+        <TableCaption className="sr-only">아직 우승이 없는 선수 {winless.length}명</TableCaption>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="text-left">선수</TableHead>
             {/* 뛴 시즌 많은 순으로 정렬돼 있다(splitByWins) → 위쪽이 제일 오래 기다린 사람. */}
-            <th className="num">뛴 시즌</th>
-          </tr>
-        </thead>
-        <tbody>
+            <TableHead className="text-right">뛴 시즌</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {winless.map((p) => (
-            <tr key={p.player}>
-              <td className="col-name">
+            <TableRow key={p.player}>
+              <TableCell className="text-left">
                 <PlayerLink name={p.player} />
-              </td>
-              <td className="num muted">{p.seasons}</td>
-            </tr>
+              </TableCell>
+              <TableCell className="text-right tabular-nums text-muted-foreground">
+                {p.seasons}
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+      </Table>
+    </TableScroller>
   );
 }

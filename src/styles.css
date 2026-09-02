@@ -254,10 +254,8 @@ h3 {
   font-weight: 650;
   line-height: 1.7;
 }
-.badge--win {
-  background: color-mix(in srgb, var(--good) 16%, transparent);
-  color: var(--good);
-}
+/* [삭제: 2026-09-02 16:30, 김병현 수정] .badge--win — ChampionshipRosterTable.tsx 가
+   shadcn Badge variant="win" 으로 이전 완료(계획서 §7 Phase 3c). */
 /* [삭제: 2026-09-02 15:40, 김병현 수정] .badge--loss/--draw/--overtime, .badge-dot —
    Badge.tsx(ResultBadge/OvertimeBadge/TeamBadge)가 shadcn Badge variant + 인라인
    Tailwind 클래스로 이전 완료(계획서 §7 Phase 3a). .badge/.badge--win/--team 은
@@ -512,48 +510,9 @@ h3 {
   display: inline-block;
 }
 
-/* ── 슈팅 스플릿 게이지 ───────────────────────────────────────── */
-
-.splits {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.split-row {
-  display: grid;
-  grid-template-columns: 52px 1fr 54px 46px;
-  align-items: center;
-  gap: 10px;
-}
-.split-label {
-  color: var(--text-2);
-  font-weight: 550;
-  font-size: 13px;
-}
-.split-meter {
-  height: 10px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--text) 8%, transparent);
-  overflow: hidden;
-}
-.split-fill {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--sequential);
-  transition: width 0.3s ease;
-}
-.split-attempts {
-  text-align: right;
-  color: var(--muted);
-  font-size: 12.5px;
-  font-variant-numeric: tabular-nums;
-}
-.split-value {
-  text-align: right;
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
-}
+/* [삭제: 2026-09-02 16:30, 김병현 수정] .splits/.split-* — ShootingSplits.tsx 가
+   shadcn Progress + Tailwind grid 로 이전 완료(계획서 §7 Phase 3c). 옛 고정폭 46px
+   퍼센트 칸은 Geist 숫자폭 때문에 줄바꿈되던 회귀였다 — minmax(3.5rem,auto) 로 교체. */
 
 /* ── 상태(로딩/에러/빈값) ─────────────────────────────────────── */
 
@@ -986,52 +945,11 @@ h3 {
 .compare-field-caption {
   color: var(--muted);
 }
-.compare-table th.compare-metric,
-.compare-table td.compare-metric {
-  text-align: center;
-  color: var(--muted);
-  font-size: 12.5px;
-  font-weight: 550;
-}
-/* [변경: 2026-07-27 13:21, 김병현 수정] 비교표 마지막 줄 밑줄 정리.
-   공용 규칙(.table tbody tr:last-child td)은 td 만 잡는데, 비교표의 지표 칸은
-   화면 낭독기용으로 th(scope="row") 라서 그 칸만 밑줄이 남았다. */
-.compare-table tbody tr:last-child th {
-  border-bottom: none;
-}
-.compare-table th.compare-side--left {
-  text-align: right;
-}
-.compare-table th.compare-side--right {
-  text-align: left;
-}
-.compare-table td.compare-cell:last-child {
-  text-align: left;
-}
-.compare-value {
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
-}
-.compare-hint {
-  display: block;
-  color: var(--muted);
-  font-size: 12px;
-}
-.compare-cell.is-better .compare-value {
-  font-weight: 800;
-}
-.compare-cell.is-better.is-left .compare-value {
-  color: var(--series-1);
-}
-.compare-cell.is-better.is-right .compare-value {
-  color: var(--series-2);
-}
-.compare-swatch--left {
-  background: var(--series-1);
-}
-.compare-swatch--right {
-  background: var(--series-2);
-}
+/* [삭제: 2026-09-02 16:30, 김병현 수정] .compare-table/.compare-metric/.compare-side--*/
+   .compare-value/.compare-hint/.is-better(.is-left/.is-right)/.compare-swatch--* —
+   CompareTable.tsx 가 shadcn Table + Tailwind 유틸리티로 이전 완료(계획서 §7 Phase 3c).
+   .compare-picker/.compare-field/.compare-field-caption 은 ComparePage.tsx(Phase 4)가
+   아직 원문 그대로 쓰고 있어서 남겨 둔다. */
 
 @media (max-width: 560px) {
   /* [삭제: 2026-09-02 14:00, 김병현 수정] .container/.nav-link/.nav--admin 규칙 제거 —
@@ -1145,95 +1063,12 @@ h3 {
   min-width: 52px;
 }
 
-/* 이미 우승자로 찍힌 줄. 왼쪽 띠 + 옅은 배경으로 "이건 등록됨"이 한눈에 보이게.
-   색만으로 구분하지 않는다 — 같은 줄에 '우승' 글자 배지가 함께 붙는다(색맹 대비). */
-.champ-row.is-won td {
-  background: color-mix(in srgb, var(--series-1) 7%, transparent);
-}
-.champ-row.is-won td:first-child {
-  box-shadow: inset 3px 0 0 var(--series-1);
-}
+/* [삭제: 2026-09-02 16:30, 김병현 수정] .champ-row.is-won/.champ-tag/.champ-team/
+   .champ-games/.champ-warn — ChampionshipRosterTable.tsx 가 shadcn Table/Badge +
+   Tailwind 유틸리티로 이전 완료(계획서 §7 Phase 3c). */
 
-/* 이름 옆 '우승' 배지 */
-.champ-tag {
-  margin-left: 8px;
-}
-
-/* '설윤 7/8경기' 의 두 조각. 팀 이름은 또렷하게, 경기 수는 한 단계 옅게 —
-   판단의 주인공은 팀이고 경기 수는 그 근거라서. */
-.champ-team {
-  font-weight: 600;
-}
-.champ-games {
-  color: var(--muted);
-  font-size: 12.5px;
-  font-variant-numeric: tabular-nums;
-}
-
-/* 저장된 팀과 지금 계산값이 갈렸을 때만 뜨는 줄. 조용히 덮지 않고 사실을 그대로 보여준다.
-   색은 .field-hint--warn 과 같은 식을 쓴다 — 이 앱의 '주의' 색은 그 한 규칙뿐이라 맞춰 둔다. */
-.champ-warn {
-  display: block;
-  margin-top: 2px;
-  color: color-mix(in srgb, var(--draw) 72%, var(--text));
-  font-size: 12px;
-}
-
-/* ── 명예의 전당(역대 우승 명단) ────────────────────────────────────────────
-   [신설: 2026-09-02 김병현 작성]
-   표가 아니라 카드+명단으로 그린다 — 대회마다 인원이 6~10명으로 제각각이라
-   표로 만들면 칸 수가 안 맞아 빈칸만 줄줄이 생긴다. */
-
-.hof-years {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-.hof-year-title {
-  margin: 0 0 8px;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--muted);
-  letter-spacing: 0.02em;
-}
-.hof-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.hof-item {
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--series-1) 4%, transparent);
-}
-.hof-item-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 6px;
-}
-.hof-season {
-  font-weight: 700;
-  font-size: 13.5px;
-}
-.hof-count {
-  color: var(--muted);
-  font-size: 12.5px;
-  /* 인원 수는 부가 정보라 오른쪽 끝으로 밀어 둔다(팀 이름이 주인공). */
-  margin-left: auto;
-}
-/* 이름을 줄바꿈되는 목록으로. 이름 사이를 점으로 나누면 인원이 많아도 덩어리로 안 읽힌다. */
-.hof-players {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 10px;
-  font-size: 13px;
-}
+/* [삭제: 2026-09-02 16:30, 김병현 수정] .hof-* 전부 — ChampionshipHistory.tsx 가
+   shadcn Card/Badge + Tailwind 유틸리티로 이전 완료(계획서 §7 Phase 3c). */
 
 /* [신설: 2026-09-02 13:00, 김병현 작성] preflight 보정 — Tailwind 가 지운 브라우저 기본값 되살리기.
    왜 필요한가: legacy 레이어는 base 레이어를 이기지만, legacy 가 '선언하지 않은' 속성은
