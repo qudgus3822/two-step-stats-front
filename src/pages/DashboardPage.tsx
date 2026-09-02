@@ -7,6 +7,8 @@ import { GameStatsPanel } from '../components/GameStatsPanel';
 // [변경: 2026-07-15 09:45, 김병현 수정] 득점 TOP·스탯 코드 분포 차트 제거로 Link·BarRanking·statCodeLabel·useTheme import 삭제.
 // [변경: 2026-07-29 10:36, 김병현 수정] 스피너 → 표 모양 뼈대(TableSkeleton).
 import { Empty, ErrorView, TableSkeleton } from '../components/states';
+// [변경: 2026-09-02 17:00, 김병현 수정] .page/.page-head/.page-title/.page-sub → PageHeader (계획서 §7 Phase 4a).
+import { PageHeader } from '../components/PageHeader';
 
 // 대시보드: 경기 기록을 한눈에.
 // [변경: 2026-07-15 09:45, 김병현 수정] 득점 TOP·스탯 코드 분포 차트 제거 — 이전엔 "전체 규모를 한눈에. 요약 카드 4개 + 득점 TOP + 스탯 코드 분포"였음.
@@ -21,11 +23,8 @@ export function DashboardPage() {
   const summary = summaryQuery.data;
 
   return (
-    <div className="page">
-      <div className="page-head">
-        <h1 className="page-title">대시보드</h1>
-        <p className="page-sub">{competitionLabel ?? '전체 대회'} 기록 요약</p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader title="대시보드" sub={`${competitionLabel ?? '전체 대회'} 기록 요약`} />
 
       {/* [변경: 2026-07-15 10:28, 김병현 수정] loading→isLoading, error→error.message, reload→refetch */}
       {/* [변경: 2026-07-29 10:36, 김병현 수정] 여기가 첫 화면이라 인상이 제일 중요하다.

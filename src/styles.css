@@ -314,57 +314,13 @@ h3 {
 /* [삭제: 2026-09-02 14:00, 김병현 수정] .season-picker* — CompetitionPicker.tsx 가
    NativeSelect(Tailwind 유틸리티)로 이전 완료(계획서 §7 Phase 2). */
 
-/* ── 경기 단위 통계 패널(대시보드) ────────────────────────────── */
-
-/* [변경: 2026-07-14 14:56, 김병현 수정] 시즌·경기 선택기를 나란히 분리 배치하는 묶음.
-   좁은 화면에선 자동 줄바꿈. */
-.stat-filters {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-
-/* 카드 헤더 우측의 경기 드롭다운. 시즌 피커와 같은 톤. */
-.game-pick {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 13px;
-}
-.game-pick-caption {
-  color: var(--muted);
-}
-/* 경기가 많아도 헤더가 안 터지게 폭 제한 + 넘치면 말줄임 */
-.game-pick .select {
-  max-width: 260px;
-}
-
-/* 팀별 선수 박스스코어 묶음. 팀 요약 표 아래에 팀마다 하나씩. */
-.team-box {
-  margin-top: 16px;
-}
-.team-box-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-.team-box-name {
-  font-weight: 650;
-}
-.team-box-score {
-  color: var(--text-2);
-  font-variant-numeric: tabular-nums;
-}
-/* 팀 이름·태그를 한 줄로: 요약 표 첫 칸의 스와치 + 이름 + 승 태그 간격 */
-.col-name .team-swatch {
-  margin-right: 7px;
-  vertical-align: middle;
-}
-.col-name .score-tag {
-  margin-left: 7px;
-}
+/* [삭제: 2026-09-02 17:00, 김병현 수정] .stat-filters, .game-pick 계열, .team-box 계열 —
+   GameStatsPanel.tsx 가 SectionCard(action 슬롯)+NativeSelect+Tailwind 유틸리티로
+   전부 이전 완료(계획서 §7 Phase 4a). .col-name .team-swatch, .col-name .score-tag 는
+   이 파일의 TeamSummary 표가 shadcn Table 로 옮겨가며 함께 고아가 됐다(GameDetailPage 의
+   동명 클래스는 .col-name 문맥 밖이라 무관 — 실측 확인).
+   ⚠ 주의: 이 주석 안에서 별표(*) 바로 뒤에 슬래시(/)를 쓰면 주석이 여기서 끝나버린다
+   (앞선 사고 — 세션 파일 기록). 클래스 이름을 나열할 땐 "*" 대신 "계열"/쉼표로 쓴다. */
 
 /* ── 리더보드 지표 탭 ─────────────────────────────────────────── */
 
