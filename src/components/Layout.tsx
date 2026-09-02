@@ -92,6 +92,17 @@ export function Layout() {
               <span aria-hidden="true">🔒</span>
               업로드
             </NavLink>
+            {/* [신설: 2026-09-02 김병현 작성] 우승횟수 관리. 업로드와 같은 운영자 묶음에 둔다 —
+                기록을 '고치는' 화면이라 성격이 같고, 같은 비밀번호 게이트 뒤에 있다. */}
+            <NavLink
+              to="/championships"
+              className={adminNavClass}
+              title="운영자 전용 · 비밀번호 필요"
+              {...prefetchOn('/championships')}
+            >
+              <span aria-hidden="true">🏆</span>
+              우승횟수 관리
+            </NavLink>
           </nav>
           <CompetitionPicker />
           <ThemeToggle />

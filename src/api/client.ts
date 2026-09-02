@@ -1,6 +1,11 @@
 // [신설: 2026-08-25 16:40, 김병현 작성] 응답 헤더에서 파일 이름 꺼내기(저장은 화면 쪽에서).
 import { fileNameFromHeader } from '../lib/download';
 import type {
+  // [신설: 2026-09-02 김병현 작성] 우승 기록 관리.
+  ChampionshipDownload,
+  ChampionshipOverview,
+  ChampionshipRoster,
+  ChampionshipWin,
   Competition,
   GameBox,
   GameConflict,
@@ -127,6 +132,25 @@ async function del<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+// [신설: 2026-09-02 김병현 작성] JSON 본문 POST. (파일을 보내는 uploadWorkbook 과 달리 평범한 JSON.)
+// del() 과 같은 모양으로 맞춰 뒀다 — 실패 처리는 공용 failure() 하나를 쓴다.
+async function post<T>(path: string, body: unknown): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error(
+      `API 서버에 연결하지 못했습니다 (${BASE}). NestJS 서버가 켜져 있는지 확인하세요.`,
+    );
+  }
+  if (!res.ok) await failure(res, `요청 실패 (HTTP ${res.status})`);
+  return res.json() as Promise<T>;
+}
+
 // 엑셀 업로드(multipart POST). GET 전용 request() 와 달리 파일을 FormData 로 보내야 해서
 // 별도 함수로 둔다. 파싱/DB 적재는 전부 서버(POST /upload)가 하고, 여기선 파일+대회 정보만 넘긴다.
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회는 이제 "연도+시즌번호(선택)+대회명" 3값으로 넘긴다
@@ -186,10 +210,16 @@ async function uploadWorkbook(
 // 파일 이름과 행 수는 본문이 아니라 헤더에 있다. 이 헤더들이 브라우저 JS 에 보이려면
 // 서버 CORS 에 exposedHeaders 가 켜져 있어야 한다(api/src/main.ts). 꺼져 있으면
 // 에러 없이 이름만 조용히 예비값으로 떨어지므로, 여기 예비값은 "그래도 뭔가는 저장된다"용이다.
-async function downloadRawData(competitionId?: number | null): Promise<RawDataDownload> {
+// [변경: 2026-09-02 김병현 수정] 내려받기가 둘(rawdata / 우승 기록)이 되면서 공통부를 함수 하나로 모았다.
+// 다른 건 '어느 주소'와 '건수 헤더 이름' 둘뿐이라, 그 둘만 인자로 받는다.
+async function downloadWorkbook(
+  path: string,
+  rowsHeader: string,
+  fallbackName: string,
+): Promise<{ blob: Blob; fileName: string; rowCount: number | null }> {
   let res: Response;
   try {
-    res = await fetch(`${BASE}/export${competitionQuery(competitionId)}`);
+    res = await fetch(`${BASE}${path}`);
   } catch {
     throw new Error(
       `API 서버에 연결하지 못했습니다 (${BASE}). NestJS 서버가 켜져 있는지 확인하세요.`,
@@ -199,14 +229,21 @@ async function downloadRawData(competitionId?: number | null): Promise<RawDataDo
   if (!res.ok) await failure(res, `내려받기 실패 (HTTP ${res.status})`);
 
   const blob = await res.blob();
-  const fileName =
-    fileNameFromHeader(res.headers.get('Content-Disposition')) ?? 'rawdata.xlsx';
-  // 헤더가 없으면 null 이다 — 0 으로 뭉개면 화면이 "0행 받았어요"라는 거짓말을 한다.
-  const rawCount = res.headers.get('X-Rawdata-Rows');
+  const fileName = fileNameFromHeader(res.headers.get('Content-Disposition')) ?? fallbackName;
+  // 헤더가 없으면 null 이다 — 0 으로 뭉개면 화면이 "0건 받았어요"라는 거짓말을 한다.
+  const rawCount = res.headers.get(rowsHeader);
   const parsedCount = rawCount != null ? Number(rawCount) : NaN;
   const rowCount = Number.isFinite(parsedCount) ? parsedCount : null;
 
   return { blob, fileName, rowCount };
+}
+
+function downloadRawData(competitionId?: number | null): Promise<RawDataDownload> {
+  return downloadWorkbook(
+    `/export${competitionQuery(competitionId)}`,
+    'X-Rawdata-Rows',
+    'rawdata.xlsx',
+  );
 }
 
 export const api = {
@@ -272,6 +309,34 @@ export const api = {
   // competitionId 를 주면 그 대회만, 생략(또는 null)하면 전체 대회를 한 파일에 담는다.
   // 받은 blob 을 실제로 저장시키는 건 화면 몫이다(lib/download.ts 의 saveBlob).
   exportRawData: (competitionId?: number | null) => downloadRawData(competitionId),
+
+  // ── 우승 기록 ────────────────────────────────────────────────────────────
+  // [신설: 2026-09-02 김병현 작성]
+
+  // 우승 관리 화면의 선수 표. competitionId 는 필수다 —
+  // 이 표의 숫자가 전부 '그 대회 안에서 몇 경기'라는 비율이라 '전체 대회'엔 뜻이 없다.
+  championshipRoster: (competitionId: number) =>
+    request<ChampionshipRoster>(`/championships/roster?competitionId=${competitionId}`),
+
+  // 우승 기록 전부 + 선수별 통산 횟수(서버가 한 번에 준다).
+  championships: () => request<ChampionshipOverview>('/championships'),
+
+  // 우승자로 찍기(+). 같은 대회 같은 선수면 몇 번 눌러도 결과가 같다(멱등).
+  // ⚠ 팀 이름은 일부러 안 보낸다 — 서버가 저장 시점에 다시 계산한다.
+  //   화면이 낡은 채 오래 열려 있었으면 엉뚱한 팀이 영구히 박히기 때문이다.
+  addChampionshipWin: (competitionId: number, player: string) =>
+    post<ChampionshipWin>('/championships', { competitionId, player }),
+
+  // 우승 취소. 없는 걸 지워도 에러가 아니다(멱등).
+  removeChampionshipWin: (competitionId: number, player: string) => {
+    const q = new URLSearchParams({ competitionId: String(competitionId), player });
+    return del<{ ok: boolean; deleted: number }>(`/championships?${q.toString()}`);
+  },
+
+  // 우승 기록 .xlsx 내려받기(시트 2장: '우승' + '우승횟수').
+  // rawdata 와 달리 대회를 안 고른다 — 우승 기록은 통산으로 보는 게 기본이라서.
+  exportChampionships: (): Promise<ChampionshipDownload> =>
+    downloadWorkbook('/championships/export', 'X-Championship-Rows', 'championships.xlsx'),
 
   // 대회 등록부: 등록된 대회 목록 (등록은 upload 가 자동으로 upsert 해서 별도 호출 없음) / 등록 해제
   competitions: () => request<Competition[]>('/competitions'),

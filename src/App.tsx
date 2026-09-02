@@ -7,6 +7,8 @@ import { GameDetailPage } from './pages/GameDetailPage';
 import { GamesPage } from './pages/GamesPage';
 // [변경: 2026-07-28 15:00, 김병현 수정] 기량 발전(직전 시즌 대비 상승률) 화면 라우트 추가.
 import { GrowthPage } from './pages/GrowthPage';
+// [신설: 2026-09-02 김병현 작성] 우승횟수 관리 화면 라우트 추가.
+import { ChampionshipPage } from './pages/ChampionshipPage';
 import { LeaderboardPage } from './pages/LeaderboardPage';
 import { PlayerDetailPage } from './pages/PlayerDetailPage';
 import { PlayersPage } from './pages/PlayersPage';
@@ -42,6 +44,17 @@ export function App() {
           element={
             <UploadPasswordGate>
               <UploadPage />
+            </UploadPasswordGate>
+          }
+        />
+        {/* [신설: 2026-09-02 김병현 작성] 우승횟수 관리도 기록을 '고치는' 화면이라
+            업로드와 같은 게이트 뒤에 둔다. 게이트는 sessionStorage 로 해제를 기억하므로,
+            업로드에서 이미 풀었으면 여기선 다시 안 묻는다(같은 열쇠 하나). */}
+        <Route
+          path="championships"
+          element={
+            <UploadPasswordGate>
+              <ChampionshipPage />
             </UploadPasswordGate>
           }
         />

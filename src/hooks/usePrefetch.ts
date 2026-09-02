@@ -16,6 +16,9 @@
 import { useCallback, useMemo } from 'react';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import {
+  // [변경: 2026-09-02 김병현 수정] 우승횟수 관리 탭 프리페치.
+  championshipRosterOptions,
+  championshipsOptions,
   gamesOptions,
   growthOptions,
   leaderboardOptions,
@@ -30,13 +33,24 @@ import { useCompetition } from '../context/CompetitionContext';
 
 // 프리페치를 붙일 수 있는 탭 주소. Layout 의 NavLink to= 와 같은 문자열이라
 // 지도(ROUTE_PREFETCH)에 빠진 탭이 있으면 타입 에러로 바로 걸린다.
-export type PrefetchRoute = '/' | '/players' | '/compare' | '/leaderboard' | '/synergy' | '/growth';
+export type PrefetchRoute =
+  | '/'
+  | '/players'
+  | '/compare'
+  | '/leaderboard'
+  | '/synergy'
+  | '/growth'
+  // [변경: 2026-09-02 김병현 수정] 우승횟수 관리(운영자 메뉴).
+  | '/championships';
 
 // 프리페치가 알아야 하는 "지금 어느 대회를 보고 있나" 한 묶음.
 interface PrefetchScope {
   competitionId: number | null; // 전역 대회 선택 (null = 전체 대회)
   // 기량 발전 화면은 대회 하나가 꼭 필요해서 '전체'면 첫 대회로 폴백한다(GrowthPage 와 같은 규칙).
   growthScopeId: number | null;
+  // [변경: 2026-09-02 김병현 수정] 우승 관리 화면은 전역 선택을 따르지 않고 '가장 최근 대회'로 시작한다
+  // (ChampionshipPage 와 같은 규칙). 대회가 하나도 없으면 null.
+  latestCompetitionId: number | null;
 }
 
 export interface Prefetcher {
@@ -81,6 +95,14 @@ const ROUTE_PREFETCH: Record<
   '/growth': (qc, s) => {
     if (s.growthScopeId != null) void qc.prefetchQuery(growthOptions(s.growthScopeId, 'eff'));
   },
+  // 우승 관리는 표 두 개를 같이 그린다 — 그 대회의 선수 표 + 통산 기록. 둘 다 미리 받는다.
+  // 통산 기록은 대회와 무관해서 대회가 없어도(첫 실행) 부를 수 있다.
+  '/championships': (qc, s) => {
+    void qc.prefetchQuery(championshipsOptions());
+    if (s.latestCompetitionId != null) {
+      void qc.prefetchQuery(championshipRosterOptions(s.latestCompetitionId));
+    }
+  },
 };
 
 export function usePrefetch(): Prefetcher {
@@ -88,12 +110,19 @@ export function usePrefetch(): Prefetcher {
   const { competitionId, competitions } = useCompetition();
   // GrowthPage 의 scopeId 계산과 같은 식. 여기서 한 번 풀어 두면 지도는 규칙을 몰라도 된다.
   const growthScopeId = competitionId ?? competitions[0]?.id ?? null;
+  // [변경: 2026-09-02 김병현 수정] 목록은 서버가 최신순으로 준다 → [0] 이 가장 최근 대회.
+  // growthScopeId 와 달리 전역 선택을 아예 안 본다(우승 관리 화면이 그렇게 동작해서).
+  const latestCompetitionId = competitions[0]?.id ?? null;
 
   const route = useCallback(
     (target: PrefetchRoute) => {
-      ROUTE_PREFETCH[target](queryClient, { competitionId, growthScopeId });
+      ROUTE_PREFETCH[target](queryClient, {
+        competitionId,
+        growthScopeId,
+        latestCompetitionId,
+      });
     },
-    [queryClient, competitionId, growthScopeId],
+    [queryClient, competitionId, growthScopeId, latestCompetitionId],
   );
 
   // 선수 이름 링크는 항상 통산(=competitionId null) 상세로 간다(PlayerDetailPage 가 그렇게 부른다).

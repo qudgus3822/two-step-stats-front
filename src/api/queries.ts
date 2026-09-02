@@ -9,6 +9,9 @@ import {
 } from '@tanstack/react-query';
 import { api } from './client';
 import type {
+  // [신설: 2026-09-02 김병현 작성] 우승 기록 관리.
+  ChampionshipOverview,
+  ChampionshipRoster,
   Competition,
   GameBox,
   GameSummary,
@@ -73,6 +76,15 @@ export const queryKeys = {
     by: (competitionId: number | null, metric: GrowthMetric) =>
       ['growth', competitionId, metric] as const,
   },
+  // [신설: 2026-09-02 김병현 작성] 우승 기록.
+  // 두 키로 나눈 이유: 선수 표(roster)는 대회마다 다르고, 통산 기록(overview)은 대회와 무관하다.
+  // 그런데 [+] 한 번이 둘 다 낡게 만든다(그 대회 표의 '우승 여부' + 모두의 통산 횟수).
+  // 그래서 무효화는 반드시 둘 다 해야 한다 → invalidateAfterChampionshipChange 참고.
+  championshipRoster: {
+    all: ['championship-roster'] as const,
+    by: (competitionId: number | null) => ['championship-roster', competitionId] as const,
+  },
+  championships: ['championships'] as const,
 };
 
 // ── 쿼리 정의(queryOptions) ────────────────────────────────────────────────
@@ -186,6 +198,27 @@ export function growthOptions(competitionId: number | null, metric: GrowthMetric
   });
 }
 
+// [신설: 2026-09-02 김병현 작성] 우승 관리 화면의 선수 표. 대회를 안 골랐으면 아예 안 부른다.
+export function championshipRosterOptions(competitionId: number | null) {
+  return queryOptions({
+    queryKey: queryKeys.championshipRoster.by(competitionId),
+    // enabled 가 false 면 실행 자체를 안 하므로, 실행 시점의 competitionId 는 항상 non-null 이다.
+    queryFn: () => api.championshipRoster(competitionId as number),
+    enabled: competitionId != null,
+    // 대회 드롭다운을 바꾸는 동안 옛 표를 깔아 둔다(다른 화면과 같은 정책).
+    // 표 위에 대회 이름이 같이 적혀 있고 낡은 동안은 흐려지므로 오해할 여지가 없다.
+    placeholderData: (prev) => prev,
+  });
+}
+
+// [신설: 2026-09-02 김병현 작성] 우승 기록 전체 + 선수별 통산 횟수. 파라미터가 없어 전환이 없다.
+export function championshipsOptions() {
+  return queryOptions({
+    queryKey: queryKeys.championships,
+    queryFn: () => api.championships(),
+  });
+}
+
 // ── 화면용 훅 ──────────────────────────────────────────────────────────────
 // [변경: 2026-07-29 10:36, 김병현 수정] 내용은 전부 위 *Options 로 옮기고, 훅은 얇은 껍데기만.
 // 호출부(useGames(id) 등)는 하나도 안 바뀐다.
@@ -251,6 +284,18 @@ export function useGrowth(
   return useQuery(growthOptions(competitionId, metric));
 }
 
+// [신설: 2026-09-02 김병현 작성] 우승 관리 화면의 선수 표.
+export function useChampionshipRoster(
+  competitionId: number | null,
+): UseQueryResult<ChampionshipRoster> {
+  return useQuery(championshipRosterOptions(competitionId));
+}
+
+// [신설: 2026-09-02 김병현 작성] 우승 기록 전체 + 선수별 통산 횟수.
+export function useChampionships(): UseQueryResult<ChampionshipOverview> {
+  return useQuery(championshipsOptions());
+}
+
 // ── 화면 표시 보조 ─────────────────────────────────────────────────────────
 
 // [신설: 2026-07-29 10:36, 김병현 작성] "지금 보이는 게 최신이 아니다"를 한 줄로 판정한다.
@@ -286,5 +331,24 @@ export async function invalidateAfterUpload(queryClient: QueryClient): Promise<v
     queryClient.invalidateQueries({ queryKey: queryKeys.synergy.all }),
     // [변경: 2026-07-28 15:00, 김병현 수정] 기량 발전도 업로드로 낡는다(경기당 평균·발전률이 바뀔 수 있어서).
     queryClient.invalidateQueries({ queryKey: queryKeys.growth.all }),
+  ]);
+}
+
+// [신설: 2026-09-02 김병현 작성] 우승 [+]/[취소] 뒤에 낡는 캐시 정리.
+//
+// 버튼 하나가 두 곳을 동시에 낡게 만든다:
+//   1) 그 대회의 선수 표 — 그 사람의 '우승 여부'와 통산 횟수 칸이 바뀐다
+//   2) 통산 기록 전체    — 다른 대회의 표에 뜨는 통산 횟수까지 같이 바뀐다
+// 그래서 지금 보고 있는 대회만 지우면 안 된다. 선수 표는 리소스 접두어로 통째 무효화한다
+// (RQ 는 queryKey 를 접두어로 매칭하므로 ['championship-roster'] 하나면 모든 대회가 걸린다).
+//
+// 스탯 캐시(games/players/leaderboard…)는 건드리지 않는다 — 우승 기록은 경기 기록을 읽기만 하고
+// 바꾸지 않아서, 저쪽 숫자는 하나도 안 변한다.
+export async function invalidateAfterChampionshipChange(
+  queryClient: QueryClient,
+): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: queryKeys.championshipRoster.all }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.championships }),
   ]);
 }

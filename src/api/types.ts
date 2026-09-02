@@ -352,3 +352,64 @@ export interface RawDataDownload {
   fileName: string; // 서버가 지은 이름 (예: 'rawdata_2023 시즌1 · 나이배_20260825.xlsx')
   rowCount: number | null; // 내보낸 행 수. 헤더를 못 읽었으면 null(= "모름", 0 과 구분)
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// [신설: 2026-09-02 김병현 작성] 우승 기록 (서버 src/stats/types.ts 의 같은 이름 타입들을 미러)
+//
+// 저장 단위가 "선수 한 명의 우승 하나"라, 여기 타입들도 그 알갱이를 중심으로 돈다.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// 우승 관리 화면 선수 표의 한 줄. "이 사람을 우승자로 찍을까?"를 판단할 재료만 담겼다.
+export interface ChampionshipRosterPlayer {
+  player: string;
+  topTeam: string | null; // 이 대회에서 가장 많이 뛴 팀
+  topTeamGames: number; // 그 팀으로 뛴 경기 수
+  totalGames: number; // 이 대회에서 뛴 총 경기 수 → 'topTeamGames / totalGames' 가 용병 판별 근거
+  careerWins: number; // 통산 우승횟수
+  won: boolean; // 이 대회에서 이미 우승자로 찍혀 있나 (true 면 버튼이 [취소])
+  // 찍혀 있을 때 저장된 팀 이름. won=false 면 null.
+  // topTeam 과 다를 수 있다(우승 확정 뒤 경기 기록이 고쳐진 경우) — 화면은 그 어긋남을 숨기지 않는다.
+  wonTeamName: string | null;
+}
+
+// GET /championships/roster?competitionId= 응답.
+export interface ChampionshipRoster {
+  competitionId: number;
+  competitionLabel: string;
+  gameCount: number; // 그 대회의 총 경기 수(연장 병합 기준) = 표의 '몇 경기 중' 분모
+  players: ChampionshipRosterPlayer[];
+}
+
+// 우승 기록 한 줄.
+export interface ChampionshipWin {
+  id: number;
+  competitionId: number;
+  competitionLabel: string;
+  year: number;
+  seasonNo: number | null;
+  competitionName: string;
+  player: string;
+  teamName: string;
+}
+
+// 선수 한 명의 통산 우승 성적.
+export interface PlayerWins {
+  player: string;
+  wins: number;
+  titles: string[]; // 어느 대회들에서 우승했는지 (숫자의 근거)
+}
+
+// GET /championships 응답 — 원본 줄들 + 거기서 센 통산 횟수를 한 번에.
+// 따로 부르면 그 사이에 [+] 가 눌려 "줄은 늘었는데 횟수는 그대로"인 화면이 나온다.
+export interface ChampionshipOverview {
+  wins: ChampionshipWin[];
+  playerWins: PlayerWins[];
+}
+
+// 우승 기록 내려받기 결과. RawDataDownload 와 같은 모양이다
+// (본문은 엑셀 바이트, 이름·건수는 헤더에 실려 온다).
+export interface ChampionshipDownload {
+  blob: Blob;
+  fileName: string; // 예: 'championships_20260902.xlsx'
+  rowCount: number | null; // 우승 줄 수. 헤더를 못 읽었으면 null(= "모름", 0 과 구분)
+}
