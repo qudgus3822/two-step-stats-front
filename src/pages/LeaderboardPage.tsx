@@ -9,6 +9,7 @@ import { BarRanking, type BarDatum } from '../components/charts/BarRanking';
 // [변경: 2026-09-03 09:00, 김병현 수정] PlayerLink 단독 → PlayerCell(아바타+링크)로 교체
 // (계획서 §Phase 2-2 — 시각 정체성 개편).
 import { PlayerCell } from '../components/PlayerCell';
+import { RankCell } from '../components/RankBadge';
 import { Empty, ErrorView, TableSkeleton } from '../components/states';
 // [변경: 2026-07-15 11:37, 김병현 수정] formatAvg import 추가 — 차트/표의 경기당 평균 표시용.
 // [변경: 2026-07-15 13:01, 김병현 수정] formatPct import 추가 — 성공률(rate) 계열 표시용.
@@ -33,32 +34,9 @@ import { Trophy } from 'lucide-react';
 // [변경: 2026-07-14 17:49, 김병현 수정] 표는 전체 순위, 막대 차트만 상위 12명으로 제한.
 const CHART_TOP_N = 12;
 
-// [신설: 2026-09-02 15:40, 김병현 작성] 중계 그래픽 리디자인(broadcast-redesign) Phase C —
-// 1~3위 순위 칩. 색만으로 구분하지 않는다 — 굵기와 칩 배경(진하기 3단계)이 같이 바뀌어야
-// 색맹도 "위쪽 3명이 특별하다"를 알 수 있다(계획서 AC-C1). 금/은/동 같은 새 팔레트 색은
-// 안 쓰고 이미 있는 토큰(primary·foreground 투명도)만 조합했다 — checkPalette 게이트에
-// 색을 새로 안 늘린다. 4위부터는 옛 화면 그대로(칩 없이 흐린 숫자)라 나머지 표는 안 바뀐다.
-const RANK_TOP_STYLE: Record<number, string> = {
-  1: 'bg-primary text-primary-foreground font-bold',
-  2: 'bg-foreground/15 text-foreground font-bold',
-  3: 'bg-foreground/8 text-foreground font-semibold',
-};
-
-function RankCell({ rank }: { rank: number }) {
-  const topStyle = RANK_TOP_STYLE[rank];
-  return (
-    <TableCell className="text-right tabular-nums">
-      <span
-        className={cn(
-          'inline-flex size-6 items-center justify-center rounded-full text-xs',
-          topStyle ?? 'text-muted-foreground',
-        )}
-      >
-        {rank}
-      </span>
-    </TableCell>
-  );
-}
+// [변경: 2026-09-03 09:00, 김병현 수정] RankCell 을 components/RankBadge.tsx 로 옮겼다 —
+// 명예의 전당(PlayerWinsTable)도 같은 1~3위 강조를 써야 해서 공용화했다(계획서 §Phase 3).
+// 4위부터는 옛 화면 그대로(칩 없이 흐린 숫자)라 나머지 표는 안 바뀐다.
 
 export function LeaderboardPage() {
   const { competitionId, competitionLabel } = useCompetition();

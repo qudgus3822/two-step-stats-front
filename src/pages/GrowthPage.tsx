@@ -30,6 +30,7 @@ import {
   GROWTH_BASIS_LABELS,
   GROWTH_UNQUALIFIED_LABELS,
   METRIC_LABELS,
+  cleanCompetitionLabel,
   deltaTone,
 } from "../lib/format";
 // [변경: 2026-09-02 17:50, 김병현 수정] 아래 7줄 — 계획서 §7 Phase 4c.
@@ -99,7 +100,11 @@ export function GrowthPage() {
         sub={
           report ? (
             <>
-              {report.current.label} ← 직전: {report.previous?.label ?? "없음"}{" "}
+              {/* [변경: 2026-09-03 09:00, 김병현 수정] "· -" 데이터 표시 버그 수정(계획서
+                  §Phase 3, AC-6) — GrowthSeason.label 도 competitionLabel 과 같은 서버 값이라
+                  같은 정제가 필요하다. */}
+              {cleanCompetitionLabel(report.current.label)} ← 직전:{" "}
+              {report.previous ? cleanCompetitionLabel(report.previous.label) : "없음"}{" "}
               · 이번 {report.current.games}경기 · 직전{" "}
               {report.previous?.games ?? 0}경기 · 양 시즌 {report.minGames}경기
               이상만 순위
@@ -144,8 +149,8 @@ export function GrowthPage() {
           )}
           {report && report.previous != null && report.previous.games === 0 && (
             <Empty>
-              직전 시즌({report.previous.label})에 기록이 없어서 비교할 수
-              없어요.
+              직전 시즌({cleanCompetitionLabel(report.previous.label)})에 기록이 없어서
+              비교할 수 없어요.
             </Empty>
           )}
           {report &&

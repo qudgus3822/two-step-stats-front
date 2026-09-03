@@ -2,6 +2,10 @@ import type { PlayerWins } from '../api/types';
 // [변경: 2026-09-03 09:00, 김병현 수정] PlayerLink 단독 → PlayerCell(아바타+링크)로 교체
 // (계획서 §Phase 2-2 — 시각 정체성 개편).
 import { PlayerCell } from './PlayerCell';
+// [신설: 2026-09-03 09:00, 김병현 작성] 1~3위 강조(계획서 §Phase 3 — 리더보드와 같은 규칙 재사용).
+import { RankCell } from './RankBadge';
+// [신설: 2026-09-03 09:00, 김병현 작성] "· -" 데이터 표시 버그 수정(계획서 §Phase 3, AC-6).
+import { cleanCompetitionLabel } from '../lib/format';
 import { Empty } from './states';
 import { TableScroller } from './TableScroller';
 import {
@@ -59,8 +63,10 @@ export function PlayerWinsTable({ players }: { players: PlayerWins[] }) {
           {players.map((p, i) => (
             <TableRow key={p.player}>
               {/* 서버가 이미 '우승 많은 순'으로 정렬해 줬다 → 순서 그대로가 곧 순위다.
-                  동률에 같은 번호를 붙이는 진짜 등수 계산은 하지 않는다(순위표라기보단 명단이다). */}
-              <TableCell className="text-right">{i + 1}</TableCell>
+                  동률에 같은 번호를 붙이는 진짜 등수 계산은 하지 않는다(순위표라기보단 명단이다).
+                  [변경: 2026-09-03 09:00, 김병현 수정] 1~3위 강조(계획서 §Phase 3 — 리더보드와
+                  같은 RankCell 재사용). */}
+              <RankCell rank={i + 1} />
               <TableCell className="text-left font-semibold">
                 <PlayerCell name={p.player} />
               </TableCell>
@@ -83,13 +89,47 @@ export function PlayerWinsTable({ players }: { players: PlayerWins[] }) {
                 {p.winRate != null ? `${p.winRate}%` : '-'}
               </TableCell>
               {/* 우승이 없으면 적을 대회도 없다. 빈칸으로 두면 '데이터가 빠졌나?'로 읽히니 '-' 로. */}
-              <TableCell className="text-muted-foreground">
-                {p.titles.length > 0 ? p.titles.join(', ') : '-'}
+              <TableCell className="whitespace-normal text-muted-foreground">
+                <TitlesCell titles={p.titles} />
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
     </TableScroller>
+  );
+}
+
+// [신설: 2026-09-03 09:00, 김병현 작성] "우승한 대회" 열 — 표가 아니라 이 칸 하나만 접는다.
+//
+// 왜 필요한가: 다승자는 대회를 10개 넘게 들고 있어서, 다 펼쳐 적으면 이 칸 하나가 표 전체
+// 너비를 끌고 늘어난다(계획서 §Phase 3 진단). 최근 3개만 항상 보여주고, 나머지는 네이티브
+// <details> 로 접는다 — React state 없이 브라우저가 여닫음을 대신 해 준다(이 표는 effect/state
+// 없이 순수 렌더만 하는 원칙을 그대로 지킨다).
+//
+// [변경: 2026-09-03] cleanCompetitionLabel 로 "· -" 꼬리를 지운다 — 서버 값(competitionLabel)이
+// 시즌은 있고 대회명이 '-'뿐인 대회에서 이 꼬리를 그대로 붙여 보낸다(AC-6).
+const VISIBLE_TITLE_COUNT = 3;
+
+function TitlesCell({ titles }: { titles: string[] }) {
+  if (titles.length === 0) return <>-</>;
+
+  const cleaned = titles.map(cleanCompetitionLabel);
+  const visible = cleaned.slice(0, VISIBLE_TITLE_COUNT);
+  const rest = cleaned.slice(VISIBLE_TITLE_COUNT);
+
+  return (
+    <span>
+      {visible.join(', ')}
+      {rest.length > 0 && (
+        <details className="inline">
+          <summary className="ml-1 inline cursor-pointer list-none text-primary underline-offset-2 hover:underline marker:content-['']">
+            +{rest.length}개 더
+          </summary>
+          {', '}
+          {rest.join(', ')}
+        </details>
+      )}
+    </span>
   );
 }

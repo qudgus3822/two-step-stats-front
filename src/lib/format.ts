@@ -159,3 +159,16 @@ export const GROWTH_KIND_VIEW: Record<GrowthKind, GrowthKindView> = {
     ],
   },
 };
+
+// [신설: 2026-09-03 09:00, 김병현 작성] 시각 정체성 개편(visual-identity) Phase 3 —
+// 데이터 표시 버그 수정. 대회 라벨은 서버가 `연도 시즌N · 대회명`(competition.service.ts
+// competitionLabel())으로 만드는데, 시즌이 있는 대회는 대회명 칸에 실제로 '-'(이름 없음
+// 표시용 더미 값)이 저장돼 있어서 "2025 시즌4 · -"처럼 꼬리에 " · -"가 그대로 붙어 나온다.
+// 실측(GET /championships): "2025 시즌4", "2025 시즌3" 등 시즌이 있는 대회 전부가 이 상태다.
+//
+// 백엔드 데이터(대회명 자체)를 고치는 건 이번 작업 범위 밖이라, 화면에 보여줄 때만
+// 이 꼬리를 잘라낸다 — 대회명이 통째로 '-' 하나뿐일 때만 매치되게 앵커링해서, "다이나마이트-"
+// 처럼 진짜 이름이 하이픈으로 끝나는 경우는 절대 안 건드린다.
+export function cleanCompetitionLabel(label: string): string {
+  return label.replace(/ · -$/, '').replace(/^(\d{4}) -$/, '$1');
+}

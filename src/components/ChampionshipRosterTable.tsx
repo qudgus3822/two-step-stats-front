@@ -1,6 +1,10 @@
 import type { ChampionshipRoster, ChampionshipRosterPlayer } from '../api/types';
 // [신설: 2026-09-03 09:00, 김병현 작성] 선수 열 아바타(계획서 §Phase 2-2).
 import { PlayerAvatar } from './PlayerAvatar';
+// [신설: 2026-09-03 09:00, 김병현 작성] "· -" 데이터 표시 버그 수정(계획서 §Phase 3, AC-6).
+// 이 표의 competitionLabel 은 CompetitionContext 를 거치지 않는 별도 API(championshipRoster)
+// 라서 여기서 따로 한 번 정제해야 한다.
+import { cleanCompetitionLabel } from '../lib/format';
 import { Empty } from './states';
 import { TableScroller } from './TableScroller';
 import { Badge } from './ui/badge';
@@ -54,12 +58,13 @@ export function ChampionshipRosterTable({
   }
 
   const wonCount = roster.players.filter((p) => p.won).length;
+  const competitionLabel = cleanCompetitionLabel(roster.competitionLabel);
 
   return (
-    <TableScroller label={`${roster.competitionLabel} 출전 선수`} stale={stale}>
+    <TableScroller label={`${competitionLabel} 출전 선수`} stale={stale}>
       <Table>
         <TableCaption className="sr-only">
-          {roster.competitionLabel} 출전 선수 {roster.players.length}명 중 우승자 {wonCount}명
+          {competitionLabel} 출전 선수 {roster.players.length}명 중 우승자 {wonCount}명
         </TableCaption>
         <TableHeader>
           <TableRow>
