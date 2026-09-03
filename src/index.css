@@ -26,42 +26,51 @@
 /* ── 라이트 토큰 ────────────────────────────────────────────────
    ⚠ 아래 hex 는 src/theme/palette.ts 의 lightTokens 와 반드시 같아야 한다.
      Tailwind v4 는 TS 를 못 읽어서 어쩔 수 없이 두 곳에 적는다.
-     어긋나면 `npm run build` 가 실패한다 — scripts/checkPalette.mjs 가 막는다. */
+     어긋나면 `npm run build` 가 실패한다 — scripts/checkPalette.mjs 가 막는다.
+
+   [변경: 2026-09-03 09:00, 김병현 수정] 시각 정체성 개편(visual-identity) Phase 1.
+   옛 팔레트를 shadcn 토큰 이름에 그대로 얹기만 했던 걸 여기서 처음 실제로 바꾼다.
+   중립색(secondary/muted/baseline)을 누런 회색에서 Tailwind Slate(차가운 회청색)로,
+   강조색(primary)을 더 선명하게, 배경↔카드 간격을 벌렸다. 승/패/무 의미색과 차트
+   2~8번 계열은 색맹 안전 검증값이라 그대로 둔다(palette.ts 상단 주석과 같은 결정). */
 :root {
   --radius: 0.875rem;                    /* 14px — 옛 --radius 와 동일 */
 
-  --background: #f9f9f7;                 /* 옛 --page */
-  --foreground: #0b0b0b;                 /* 옛 --text */
-  --card: #fcfcfb;                       /* 옛 --surface */
-  --card-foreground: #0b0b0b;
-  --popover: #fcfcfb;
-  --popover-foreground: #0b0b0b;
+  --background: #f1f5f9;                 /* 옛 #f9f9f7(누런 크림) → slate-100 */
+  --foreground: #0f172a;                 /* 옛 #0b0b0b → slate-900 */
+  --card: #ffffff;                       /* 옛 #fcfcfb → 순백(배경과의 차이를 벌림) */
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
 
-  --primary: #2a78d6;                    /* 옛 --series-1 / --sequential. CSS 37곳의 브랜드색 */
+  --primary: #2563eb;                    /* 옛 #2a78d6 → 채도를 올린 파랑(브랜드색) */
   --primary-foreground: #ffffff;
-  --secondary: #e1e0d9;                  /* 옛 --grid */
-  --secondary-foreground: #52514e;       /* 옛 --text-2 */
-  --muted: #e1e0d9;
-  --muted-foreground: #898781;           /* 옛 --muted */
+  --secondary: #e2e8f0;                  /* 옛 #e1e0d9(누런 회색) → slate-200 */
+  --secondary-foreground: #475569;       /* 옛 #52514e → slate-600 */
+  --muted: #e2e8f0;
+  /* muted-foreground: slate-500(#64748b)은 배경 대비 4.39:1로 AA(4.5) 미달이라
+     500과 600 사이 값을 직접 골랐다(실측: 배경 4.97:1 / 카드 5.44:1, 둘 다 통과). */
+  --muted-foreground: #5b6b80;
   --accent: color-mix(in srgb, var(--primary) 10%, var(--card));  /* hover 틴트 */
-  --accent-foreground: #0b0b0b;
+  --accent-foreground: #0f172a;
   --destructive: #d03b3b;                /* 옛 --loss */
   --destructive-foreground: #ffffff;
 
-  --border: rgba(11, 11, 11, 0.1);       /* 옛 --border 그대로 */
-  --input: rgba(11, 11, 11, 0.1);
-  --ring: #2a78d6;
+  --border: rgba(15, 23, 42, 0.12);      /* 옛 rgba(11,11,11,.1) → slate-900 기반 알파 */
+  --input: rgba(15, 23, 42, 0.12);
+  --ring: #2563eb;
   /* [신설] 옛 --baseline. --border 보다 진한 중간 톤 구분선.
      shadcn 에 대응 토큰이 없어서 새로 만든다(계획서 §D10).
      쓰는 곳: 표 머리 밑줄 / 버튼·탭 hover 테두리 / 드롭존 점선. */
-  --baseline: #c3c2b7;
+  --baseline: #cbd5e1;                   /* 옛 #c3c2b7 → slate-300 */
 
   /* 데이터 시각화 8색 — 색맹 안전성이 검증된 값이라 shadcn 기본색으로 대체 불가.
-     차트는 palette.ts(JS)를 쓰고, 여기 값은 CSS 쪽(스와치·테두리)용이다. */
-  --chart-1: #2a78d6; --chart-2: #1baf7a; --chart-3: #eda100; --chart-4: #008300;
+     차트는 palette.ts(JS)를 쓰고, 여기 값은 CSS 쪽(스와치·테두리)용이다.
+     1번(brand accent)만 primary 와 같이 올리고, 2~8번은 그대로 둔다. */
+  --chart-1: #2563eb; --chart-2: #1baf7a; --chart-3: #eda100; --chart-4: #008300;
   --chart-5: #4a3aa7; --chart-6: #e34948; --chart-7: #e87ba4; --chart-8: #eb6834;
 
-  /* 경기 결과 의미색. 옛 --good/--loss/--draw.
+  /* 경기 결과 의미색. 옛 --good/--loss/--draw. 색 자체는 미변경(의미색이라 유지).
      *-soft = 뱃지 배경. 혼합비(16/16/22%)는 옛 styles.css:345-356 그대로 — 대비 유지. */
   --win: #0ca30c;
   --win-soft: color-mix(in srgb, var(--win) 16%, transparent);
@@ -71,45 +80,51 @@
   --draw-soft: color-mix(in srgb, var(--draw) 22%, transparent);
   --draw-foreground: color-mix(in srgb, var(--draw) 70%, #000);
 
-  /* 안내 블록 2종. 혼합비는 옛 styles.css:1007-1049 그대로.
-     [대비 근거 — 옛 styles.css:1045-1048 에서 이관]
-       --info-foreground 의 70%: 라이트 4.92 / 다크 4.97 로 WCAG AA(4.5) 통과.
-       78% 로 올리면 4.29 / 4.45 로 떨어진다. 칩 글자는 12px·650 이라
-       '큰 글자' 완화(3:1)가 아니라 4.5 기준이 그대로 적용된다.
-       --foreground 값을 안 바꿨기 때문에 이 계산 결과도 그대로다. */
+  /* 안내 블록 2종. 혼합비는 옛 styles.css:1007-1049 그대로 이어받되, 새 팔레트로
+     다시 계산했다(2026-09-03).
+     [대비 근거 — 실측, contrast.mjs 로 WCAG 공식 그대로 계산]
+       --info-foreground 의 70%: 라이트 7.04:1(배경)/7.71:1(카드), 다크 7.06:1/5.12:1.
+       전부 AA(4.5) 넉넉히 통과 — primary·foreground 가 바뀌어도 비율은 그대로 유지.
+       --warning-foreground: 옛 72% 배합은 라이트에서 2.94:1(배경)로 AA 미달이었다
+       (다크는 12.5:1로 원래도 넉넉했다 — 라이트만 문제). 50%로 낮춰 라이트 4.94:1(배경)
+       /5.41:1(카드), 다크 14.43:1/10.46:1 — 양쪽 다 통과하는 값으로 교체했다. */
   --warning-soft: color-mix(in srgb, var(--draw) 12%, transparent);
   --warning-chip: color-mix(in srgb, var(--draw) 25%, transparent);
-  --warning-foreground: color-mix(in srgb, var(--draw) 72%, var(--foreground));
+  --warning-foreground: color-mix(in srgb, var(--draw) 50%, var(--foreground));
   --info-soft: color-mix(in srgb, var(--primary) 10%, transparent);
   --info-chip: color-mix(in srgb, var(--primary) 20%, transparent);
   --info-foreground: color-mix(in srgb, var(--primary) 70%, var(--foreground));
 }
 
-/* ── 다크 토큰 ── (palette.ts 의 darkTokens 와 일치) */
+/* ── 다크 토큰 ── (palette.ts 의 darkTokens 와 일치)
+   [변경: 2026-09-03 09:00, 김병현 수정] 배경→카드 명암비를 1.12:1(옛)→1.38:1로 벌렸다
+   ("카드가 배경에 묻힌다"는 진단의 핵심). background/secondary·muted/card/popover
+   4단으로 slate-950/900/800/700 을 그대로 써서 계단을 분명히 했다(계획서 "3단 이상"). */
 .dark {
-  --background: #0d0d0d;
-  --foreground: #ffffff;
-  --card: #1a1a19;
-  --card-foreground: #ffffff;
-  --popover: #1a1a19;
-  --popover-foreground: #ffffff;
+  --background: #020617;                 /* 옛 #0d0d0d(중성 검정) → slate-950 */
+  --foreground: #f8fafc;                 /* 옛 #ffffff → slate-50 */
+  --card: #1e293b;                       /* 옛 #1a1a19 → slate-800 */
+  --card-foreground: #f8fafc;
+  --popover: #334155;                    /* 옛 #1a1a19(카드와 동일) → slate-700, 카드 위 요소용 3번째 단 */
+  --popover-foreground: #f8fafc;
 
-  --primary: #3987e5;
+  --primary: #2f6fe0;                    /* 옛 #3987e5 → 흰 글자 대비 3.64:1(AA 미달)이던 걸
+                                             4.70:1 로 고치면서 채도도 더 올렸다 */
   --primary-foreground: #ffffff;
-  --secondary: #2c2c2a;
-  --secondary-foreground: #c3c2b7;
-  --muted: #2c2c2a;
-  --muted-foreground: #898781;
+  --secondary: #0f172a;                  /* 옛 #2c2c2a → slate-900 */
+  --secondary-foreground: #cbd5e1;       /* 옛 #c3c2b7(누런 회색) → slate-300 */
+  --muted: #0f172a;
+  --muted-foreground: #94a3b8;           /* 옛 #898781 → slate-400 */
   --accent: color-mix(in srgb, var(--primary) 14%, var(--card));
-  --accent-foreground: #ffffff;
+  --accent-foreground: #f8fafc;
   --destructive: #d03b3b;
 
-  --border: rgba(255, 255, 255, 0.1);
-  --input: rgba(255, 255, 255, 0.1);
-  --ring: #3987e5;
-  --baseline: #383835;
+  --border: rgba(148, 163, 184, 0.16);   /* 옛 rgba(255,255,255,.1) → slate-400 기반 알파 */
+  --input: rgba(148, 163, 184, 0.16);
+  --ring: #2f6fe0;
+  --baseline: #475569;                   /* 옛 #383835 → slate-600 */
 
-  --chart-1: #3987e5; --chart-2: #199e70; --chart-3: #c98500; --chart-4: #008300;
+  --chart-1: #2f6fe0; --chart-2: #199e70; --chart-3: #c98500; --chart-4: #008300;
   --chart-5: #9085e9; --chart-6: #e66767; --chart-7: #d55181; --chart-8: #d95926;
 
   /* --win/--loss/--draw 는 라이트/다크가 같은 값(palette.ts 도 동일).
