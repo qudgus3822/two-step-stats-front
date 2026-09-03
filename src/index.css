@@ -5,12 +5,13 @@
    왜 이 파일 하나인가: Tailwind v4 는 설정 파일(tailwind.config)이 없다.
    테마를 CSS 에서 선언한다(CSS-first). 그래서 색·반경·폰트가 전부 여기 모인다.
 
-   레이어 순서 선언이 맨 앞인 이유: 옛 styles.css 를 'legacy' 레이어에 가둬서
-   (1) 안 옮긴 화면은 예전 그대로 보이고 (2) 옮긴 화면은 유틸리티가 이기게 하려고.
-   @layer 선언문은 @import 보다 앞에 와도 되는 몇 안 되는 규칙이다.
-   ⚠ 단, legacy 가 '선언하지 않은' 속성은 preflight 가 이긴다 — 계획서 §D6-1 참고.
+   [변경: 2026-09-03 09:00, 김병현 수정] 시각 정체성 개편(visual-identity) Phase 4 —
+   옛 styles.css(legacy 레이어)를 삭제하면서 레이어 순서에서도 'legacy'를 뺐다.
+   마이그레이션 기간 동안 옛 CSS 를 가둬 뒀던 레이어라, 그 파일이 없어진 지금은
+   이름만 남아 있어도 뜻이 없다. @layer 선언문은 @import 보다 앞에 와도 되는
+   몇 안 되는 규칙이라 여기 그대로 둔다.
    ───────────────────────────────────────────────────────────── */
-@layer theme, base, legacy, components, utilities;
+@layer theme, base, components, utilities;
 
 @import "tailwindcss";
 @import "tw-animate-css";

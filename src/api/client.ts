@@ -1,5 +1,8 @@
 // [신설: 2026-08-25 16:40, 김병현 작성] 응답 헤더에서 파일 이름 꺼내기(저장은 화면 쪽에서).
 import { fileNameFromHeader } from '../lib/download';
+// [신설: 2026-09-03 09:00, 김병현 작성] "· -" 데이터 표시 버그 정제(계획서 §Phase 3, AC-6) —
+// 아래 sanitize() 참고.
+import { cleanCompetitionLabel } from '../lib/format';
 import type {
   // [신설: 2026-09-02 김병현 작성] 우승 기록 관리.
   ChampionshipDownload,
@@ -50,7 +53,9 @@ export class UploadConflictError extends Error {
     // 서버가 옛 버전이면 newPlayers 가 없을 수 있다 → 빈 배열로 흡수(화면은 그냥 그 칸이 안 뜬다).
     this.games = body.games ?? [];
     this.newPlayers = body.newPlayers ?? [];
-    this.competition = body.competition;
+    // [변경: 2026-09-03 09:00, 김병현 수정] 이 값도 서버의 competitionLabel 이라 같은 정제가 필요하다
+    // (AC-6). 이 경로는 parseJson() 을 안 거치고 JSON.parse(detail) 로 직접 읽어서 따로 적용한다.
+    this.competition = cleanCompetitionLabel(body.competition);
   }
 }
 
@@ -69,6 +74,32 @@ const BASE = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api').
   /\/$/,
   '',
 );
+
+// [신설: 2026-09-03 09:00, 김병현 작성] 시각 정체성 개편(visual-identity) Phase 3, AC-6 —
+// 대회 라벨류 문자열이 "2025 시즌4 · -" 처럼 꼬리에 " · -" 를 달고 온다(원인: 대회명이
+// '-' 뿐인 대회가 실제로 있다 — competition.service.ts competitionLabel() 참고).
+// 이 값을 담는 필드가 Competition.label / GameBox.competition / ChampionshipRoster.
+// competitionLabel 등 API 응답 5곳 넘게 흩어져 있어서, 화면마다 따로 고치면 새 필드가
+// 늘 때마다 또 빠뜨린다. 그래서 응답을 파싱하는 이 경계 한 곳에서, 어떤 필드인지 몰라도
+// 되게 값을 재귀적으로 훑어 정제한다. cleanCompetitionLabel 의 정규식이 " · -" 로 끝나는
+// 값 / "연도 -" 형태만 좁게 잡게 앵커링돼 있어서, 선수·팀 이름 같은 진짜 데이터를
+// 잘못 건드릴 걱정은 없다(형식이 우연히 일치할 일이 없다).
+function sanitize<T>(data: T): T {
+  if (typeof data === 'string') return cleanCompetitionLabel(data) as unknown as T;
+  if (Array.isArray(data)) return data.map(sanitize) as unknown as T;
+  if (data !== null && typeof data === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(data)) out[k] = sanitize(v);
+    return out as T;
+  }
+  return data;
+}
+
+// GET/DELETE/POST 셋 다 이 한 함수로 JSON 을 읽는다 — sanitize() 를 매 응답 파싱 지점마다
+// 따로 부르는 걸 막는다(하나라도 빠뜨리면 그 경로만 "· -" 가 되살아난다).
+async function parseJson<T>(res: Response): Promise<T> {
+  return sanitize((await res.json()) as T);
+}
 
 // 서버가 4xx/5xx를 줄 때 본문 메시지를 뽑아 에러로 던진다(화면에서 보여주기 좋게).
 async function request<T>(path: string): Promise<T> {
@@ -94,7 +125,7 @@ async function request<T>(path: string): Promise<T> {
     }
     throw new ApiError(res.status, message || `요청 실패 (HTTP ${res.status})`);
   }
-  return res.json() as Promise<T>;
+  return parseJson<T>(res);
 }
 
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — 필터 키가 문자열(season)에서
@@ -129,7 +160,7 @@ async function del<T>(path: string): Promise<T> {
     );
   }
   if (!res.ok) await failure(res, `요청 실패 (HTTP ${res.status})`);
-  return res.json() as Promise<T>;
+  return parseJson<T>(res);
 }
 
 // [신설: 2026-09-02 김병현 작성] JSON 본문 POST. (파일을 보내는 uploadWorkbook 과 달리 평범한 JSON.)
@@ -148,7 +179,7 @@ async function post<T>(path: string, body: unknown): Promise<T> {
     );
   }
   if (!res.ok) await failure(res, `요청 실패 (HTTP ${res.status})`);
-  return res.json() as Promise<T>;
+  return parseJson<T>(res);
 }
 
 // 엑셀 업로드(multipart POST). GET 전용 request() 와 달리 파일을 FormData 로 보내야 해서
@@ -198,7 +229,7 @@ async function uploadWorkbook(
     const message = (parsed as { message?: string } | null)?.message ?? detail;
     throw new Error(message || `업로드 실패 (HTTP ${res.status})`);
   }
-  return res.json() as Promise<UploadResult>;
+  return parseJson<UploadResult>(res);
 }
 
 // [신설: 2026-08-25 16:40, 김병현 작성] 원본(rawdata) 데이터 내려받기. 업로드의 반대 방향이다.

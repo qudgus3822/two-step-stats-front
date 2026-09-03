@@ -25,7 +25,10 @@ export function ScoreboardHero({ box }: { box: GameBox }) {
       {/* 어느 경기인지 — 시각적으로는 작지만, 시맨틱으로는 이 섹션의 h2(옛 "경기 단위 통계"
           제목 자리를 대신한다. 헤딩 탐색을 쓰는 스크린리더 사용자에게 "무슨 경기인지"를
           바로 알려주는 편이 일반 이름표보다 더 유용하다는 판단. */}
-      <h2 className="border-b border-border px-4 py-2.5 text-sm text-muted-foreground sm:px-6">
+      {/* [변경: 2026-09-03 09:00, 김병현 수정] font-semibold 명시 — 옛 styles.css(legacy)의
+          전역 h1,h2,h3{font-weight:650} 이 Phase 4(레거시 CSS 삭제)에서 사라지므로, 이 굵기에
+          기대고 있던 이 제목이 갑자기 보통 굵기로 떨어지지 않게 직접 적는다. */}
+      <h2 className="border-b border-border px-4 py-2.5 text-sm font-semibold text-muted-foreground sm:px-6">
         {box.competition} · {gameLabel(box.week, box.game)}
         {box.overtime && (
           <span className="ml-1.5 align-middle">

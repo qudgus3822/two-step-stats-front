@@ -13,7 +13,9 @@ import { tokensFor, type ThemeMode, type ThemeTokens } from './palette';
 // 하는 일 3가지:
 //  1) 지금 모드가 뭔지(mode)와 그에 맞는 색 토큰(tokens)을 준다.
 //  2) toggle()로 모드를 바꾸고 localStorage에 기억한다.
-//  3) <html data-theme="..."> 를 바꿔 CSS 변수(styles.css)도 같이 스위치되게 한다.
+//  3) <html class="dark"> 를 붙였다 떼서 index.css 의 다크 토큰이 스위치되게 한다.
+//     [변경: 2026-09-03 09:00, 김병현 수정] 시각 정체성 개편 Phase 4 — 옛 styles.css 삭제로
+//     data-theme 속성은 더 이상 필요 없다(그 CSS 가 보던 속성이었다).
 
 interface ThemeContextValue {
   mode: ThemeMode;
@@ -39,13 +41,13 @@ function initialMode(): ThemeMode {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<ThemeMode>(initialMode);
 
-  // 모드가 바뀌면 <html> 속성과 저장소를 같이 갱신 → CSS와 JS가 항상 동기화됨.
+  // 모드가 바뀌면 <html> 클래스와 저장소를 같이 갱신 → CSS와 JS가 항상 동기화됨.
   useEffect(() => {
     // [변경: 2026-09-02 13:20, 김병현 수정] shadcn/Tailwind v4 는 .dark 클래스로 다크를 스위치한다.
-    // data-theme 은 옛 styles.css(@layer legacy)가 아직 보고 있어서 마이그레이션 기간엔 둘 다 칠한다.
-    // Phase 5(styles.css 삭제)에서 이 줄을 지운다.
+    // [변경: 2026-09-03 09:00, 김병현 수정] 시각 정체성 개편 Phase 4 — 옛 styles.css(@layer
+    // legacy)가 사라져서 data-theme 을 봐 줄 CSS 가 더 이상 없다. .dark 클래스 하나면 충분하다
+    // (index.html 의 FOUC 방지 스크립트도 같이 정리했다 — 규칙이 어긋나면 새로고침 때 깜빡인다).
     document.documentElement.classList.toggle('dark', mode === 'dark');
-    document.documentElement.dataset.theme = mode;
     window.localStorage.setItem(STORAGE_KEY, mode);
   }, [mode]);
 

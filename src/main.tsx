@@ -8,11 +8,11 @@ import { App } from './App';
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — SeasonProvider → CompetitionProvider(리네임).
 import { CompetitionProvider } from './context/CompetitionContext';
 import { ThemeProvider } from './theme/ThemeContext';
-// [변경: 2026-09-02 13:00, 김병현 수정] Tailwind 진입점을 옛 스타일시트보다 먼저 import 한다.
-// 순서 자체가 캐스케이드에 영향을 주진 않는다(레이어가 순서를 결정) — 다만
-// index.css 의 @layer 선언이 legacy 보다 먼저 평가돼야 레이어 순서가 확정된다.
+// [변경: 2026-09-03 09:00, 김병현 수정] 시각 정체성 개편(visual-identity) Phase 4 — 옛
+// styles.css 삭제. 남아 있던 색 토큰·전역 규칙은 전부 index.css(Tailwind 토큰)로
+// 옮겨졌거나(대비 계산 근거는 index.css 주석 참고) Tailwind preflight 가 이미 제공한다
+// (box-sizing:border-box, margin:0, a{color:inherit} 등). @layer legacy 도 이제 안 쓴다.
 import './index.css';
-import './styles.css';
 
 // 앱 진입점. 프로바이더 순서: 테마 → (쿼리 캐시) → 대회 → 라우터 → App.
 // (테마가 제일 바깥이라 어느 화면/차트든 색 토큰을 꺼내 쓸 수 있다.)
