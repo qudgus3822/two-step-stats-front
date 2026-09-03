@@ -23,6 +23,8 @@ import { Button } from '../components/ui/button';
 import { NativeSelect, NativeSelectOption } from '../components/ui/native-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { cn } from '../lib/utils';
+// [신설: 2026-09-03 09:00, 김병현 작성] 페이지 아이콘(계획서 §Phase 2-3) — 저울(비교)을 상징.
+import { Scale } from 'lucide-react';
 
 // 선수 두 명 + 대회를 고르면 요약/추이/슈팅/경기 로그를 나란히 대조해서 보여주는 화면.
 // 계산은 lib/playerSummary·lib/comparison 이 다 하고, 여기는 상태 판정 + 조립만 한다.
@@ -62,7 +64,11 @@ export function ComparePage() {
   return (
     <div className="flex flex-col gap-4">
       {/* 1. 페이지 헤더 — 로딩·에러 중에도 항상 보인다. */}
-      <PageHeader title="선수 비교" sub={buildSubtitle(competitionId, competitionLabel, scopeError)} />
+      <PageHeader
+        icon={Scale}
+        title="선수 비교"
+        sub={buildSubtitle(competitionId, competitionLabel, scopeError)}
+      />
 
       {/* 2~4. 페이지 수준 판정: 목록 자체를 못 가져오면 여기서 끝난다. */}
       {pageError ? (

@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
 // [변경: 2026-09-02 15:35, 김병현 수정] 내부 구현을 shadcn Spinner/Alert/Empty/Skeleton 으로 교체.
 // export 4개(Loading/ErrorView/Empty/TableSkeleton)의 이름·props·반환 의미는 그대로다.
+import { Inbox } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Button } from './ui/button';
-import { Empty as ShadcnEmpty } from './ui/empty';
+import { Empty as ShadcnEmpty, EmptyMedia } from './ui/empty';
 import { Skeleton } from './ui/skeleton';
 import { Spinner } from './ui/spinner';
 
@@ -44,10 +45,20 @@ export function ErrorView({ message, onRetry }: { message: string; onRetry?: () 
 }
 
 // 데이터가 0건일 때. 대개 아직 엑셀 업로드 전이라는 뜻.
+// [변경: 2026-09-03 09:00, 김병현 수정] 아이콘 추가(계획서 §Phase 2-3 "빈 상태에... 아이콘을
+// 일관되게"). 상자가 비어 있다는 뜻의 Inbox 하나로 통일 — 빈 상태마다 다른 아이콘을 고르면
+// "왜 이 화면은 이 아이콘이지"를 매번 설명해야 해서, 문맥은 항상 children(문구)이 맡긴다.
 export function Empty({ children }: { children: ReactNode }) {
   // [변경: 2026-09-02 16:10, 김병현 수정] 옛 .state--empty 는 color: var(--muted) 였다
   // (--text-2/secondary-foreground 보다 옅은 톤) — text-muted-foreground 로 정확히 대응.
-  return <ShadcnEmpty className="border-none p-6 text-muted-foreground">{children}</ShadcnEmpty>;
+  return (
+    <ShadcnEmpty className="border-none p-6 text-muted-foreground">
+      <EmptyMedia variant="icon">
+        <Inbox aria-hidden="true" />
+      </EmptyMedia>
+      {children}
+    </ShadcnEmpty>
+  );
 }
 
 // [신설: 2026-07-29 10:36, 김병현 작성] 표가 올 자리를 미리 잡아 두는 회색 뼈대(스켈레톤).

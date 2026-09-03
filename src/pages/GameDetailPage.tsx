@@ -16,6 +16,9 @@ import { useTheme } from '../theme/ThemeContext';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from '../components/ui/breadcrumb';
 import { PageHeader } from '../components/PageHeader';
 import { SectionCard } from '../components/SectionCard';
+// [신설: 2026-09-03 09:00, 김병현 작성] 페이지 아이콘(계획서 §Phase 2-3) — 중계 화면 느낌을
+// 살리는 방송(Radio) 아이콘. nav 에는 없는 페이지라 여기서만 고른다.
+import { Radio } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 // 경기 상세: 최종 점수 + 팀별 선수 박스스코어 표.
@@ -51,6 +54,7 @@ export function GameDetailPage() {
         // [변경: 2026-07-29 10:36, 김병현 수정] 다른 경기로 옮기는 동안 옛 스코어보드·표를 흐리게 유지.
         <div className={cn('flex flex-col gap-4', stale && 'opacity-55 transition-opacity')} aria-busy={stale}>
           <PageHeader
+            icon={Radio}
             title={
               <>
                 {gameLabel(data.week, data.game)}

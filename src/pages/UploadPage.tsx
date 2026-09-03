@@ -28,6 +28,9 @@ import { RawDataExportCard } from '../components/RawDataExportCard';
 // .upload-warn/.upload-info → Alert, .code-chip* → Badge, .warn-list → list-disc pl-[18px].
 import { PageHeader } from '../components/PageHeader';
 import { SectionCard } from '../components/SectionCard';
+// [신설: 2026-09-03 09:00, 김병현 작성] 페이지 아이콘(계획서 §Phase 2-3). navItems.ts 의
+// '업로드' 메뉴와 같은 아이콘.
+import { Lock } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import { Badge } from '../components/ui/badge';
 import { Button, buttonVariants } from '../components/ui/button';
@@ -213,6 +216,7 @@ export function UploadPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
+        icon={Lock}
         title="기록지 업로드"
         sub="대회(연도+시즌번호+대회명)를 정하고 엑셀(.xlsx) 기록지를 올리면 서버가 읽어서 저장해요."
       />

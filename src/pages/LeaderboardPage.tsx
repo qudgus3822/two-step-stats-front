@@ -6,8 +6,9 @@ import { isStaleView, useLeaderboard } from '../api/queries';
 import { useCompetition } from '../context/CompetitionContext';
 import { LEADERBOARD_METRICS, type LeaderboardMetric } from '../api/types';
 import { BarRanking, type BarDatum } from '../components/charts/BarRanking';
-// [변경: 2026-07-29 10:36, 김병현 수정] 선수 링크를 PlayerLink 로 교체(마우스 올리면 상세 미리 받기).
-import { PlayerLink } from '../components/PlayerLink';
+// [변경: 2026-09-03 09:00, 김병현 수정] PlayerLink 단독 → PlayerCell(아바타+링크)로 교체
+// (계획서 §Phase 2-2 — 시각 정체성 개편).
+import { PlayerCell } from '../components/PlayerCell';
 import { Empty, ErrorView, TableSkeleton } from '../components/states';
 // [변경: 2026-07-15 11:37, 김병현 수정] formatAvg import 추가 — 차트/표의 경기당 평균 표시용.
 // [변경: 2026-07-15 13:01, 김병현 수정] formatPct import 추가 — 성공률(rate) 계열 표시용.
@@ -21,6 +22,9 @@ import { useMetricTabs } from '../components/MetricTabs';
 import { TableScroller } from '../components/TableScroller';
 import { cn } from '../lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+// [신설: 2026-09-03 09:00, 김병현 작성] 페이지 아이콘(계획서 §Phase 2-3). navItems.ts 의
+// '리더보드' 메뉴와 같은 아이콘.
+import { Trophy } from 'lucide-react';
 
 // 리더보드: 지표를 골라 누적 순위를 막대 + 표로. 차트는 눈으로, 표는 정확한 값/평균으로.
 // [변경: 2026-07-15 11:37, 김병현 수정] 메인 지표를 누적 → 경기당 평균으로. 정렬·차트·강조 모두 경기당 기준.
@@ -83,6 +87,7 @@ export function LeaderboardPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
+        icon={Trophy}
         title="리더보드"
         sub={
           <>
@@ -176,7 +181,7 @@ export function LeaderboardPage() {
                           <TableRow key={row.player}>
                             <RankCell rank={row.rank} />
                             <TableCell className="text-left">
-                              <PlayerLink name={row.player} />
+                              <PlayerCell name={row.player} />
                             </TableCell>
                             <TableCell className="text-right tabular-nums">{row.games}</TableCell>
                             {/* [변경: 2026-07-15 11:37, 김병현 수정] 경기당(strong)·누적(muted) 순서·강조 교체. */}
@@ -210,7 +215,7 @@ export function LeaderboardPage() {
                           <TableRow key={row.player}>
                             <RankCell rank={row.rank} />
                             <TableCell className="text-left">
-                              <PlayerLink name={row.player} />
+                              <PlayerCell name={row.player} />
                             </TableCell>
                             <TableCell className="text-right tabular-nums">{row.games}</TableCell>
                             <TableCell className="text-right font-semibold tabular-nums">
@@ -245,7 +250,7 @@ export function LeaderboardPage() {
                           <TableRow key={row.player}>
                             <RankCell rank={row.rank} />
                             <TableCell className="text-left">
-                              <PlayerLink name={row.player} />
+                              <PlayerCell name={row.player} />
                             </TableCell>
                             <TableCell className="text-right tabular-nums">{row.games}</TableCell>
                             <TableCell className="text-right font-semibold tabular-nums">

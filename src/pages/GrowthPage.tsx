@@ -12,8 +12,9 @@
 import { useState } from "react";
 // [변경: 2026-07-29 10:36, 김병현 수정] stale 판정을 isStaleView 로 공용화(같은 식을 여러 화면이 쓴다).
 import { isStaleView, useGrowth } from "../api/queries";
-// [변경: 2026-07-29 10:36, 김병현 수정] 선수 링크를 PlayerLink 로 교체(마우스 올리면 상세 미리 받기).
-import { PlayerLink } from "../components/PlayerLink";
+// [변경: 2026-09-03 09:00, 김병현 수정] PlayerLink 단독 → PlayerCell(아바타+링크)로 교체
+// (계획서 §Phase 2-2 — 시각 정체성 개편).
+import { PlayerCell } from "../components/PlayerCell";
 import { useCompetition } from "../context/CompetitionContext";
 import {
   GROWTH_METRICS,
@@ -42,6 +43,9 @@ import { TableScroller } from "../components/TableScroller";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Badge } from "../components/ui/badge";
+// [신설: 2026-09-03 09:00, 김병현 작성] 페이지 아이콘(계획서 §Phase 2-3). navItems.ts 의
+// '기량 발전' 메뉴와 같은 아이콘.
+import { TrendingUp } from "lucide-react";
 import { cn } from "../lib/utils";
 
 // 발전률(delta) 톤 → 색 토큰. 시너지·기량발전 두 화면이 같은 규칙을 쓴다.
@@ -90,6 +94,7 @@ export function GrowthPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
+        icon={TrendingUp}
         title="기량 발전"
         sub={
           report ? (
@@ -272,19 +277,17 @@ function GrowthTableRow({
         {row.rank ?? "—"}
       </TableCell>
       <TableCell className="text-left">
-        <PlayerLink name={row.player} />
-        {row.isNew && (
-          <Badge variant="team" className="ml-1.5">
-            신규
-          </Badge>
-        )}
-        {/* [변경: 2026-07-28 17:00, 김병현 수정] v3.1 — !qualified 대신 unqualifiedBy 로 뱃지를
-            고른다(AC 50). 카운트 탭은 games 뿐이라 문구가 v2 와 똑같다(표본 부족) — 회귀 없음. */}
-        {!row.isNew && row.unqualifiedBy !== "none" && (
-          <Badge variant="team" className="ml-1.5">
-            {GROWTH_UNQUALIFIED_LABELS[row.unqualifiedBy]}
-          </Badge>
-        )}
+        {/* [변경: 2026-09-03 09:00, 김병현 수정] 아바타+이름+뱃지를 한 줄(flex)로 — PlayerCell
+            도입으로 마진 대신 gap 을 쓴다(계획서 §Phase 2-2). */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <PlayerCell name={row.player} />
+          {row.isNew && <Badge variant="team">신규</Badge>}
+          {/* [변경: 2026-07-28 17:00, 김병현 수정] v3.1 — !qualified 대신 unqualifiedBy 로 뱃지를
+              고른다(AC 50). 카운트 탭은 games 뿐이라 문구가 v2 와 똑같다(표본 부족) — 회귀 없음. */}
+          {!row.isNew && row.unqualifiedBy !== "none" && (
+            <Badge variant="team">{GROWTH_UNQUALIFIED_LABELS[row.unqualifiedBy]}</Badge>
+          )}
+        </div>
       </TableCell>
       <TableCell className="text-right tabular-nums text-muted-foreground">
         {row.prevGames}

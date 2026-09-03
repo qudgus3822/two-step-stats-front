@@ -6,6 +6,8 @@ import type { GameBox } from '../api/types';
 import { findGameMvp } from '../lib/gameBoxSummary';
 import { Card } from './ui/card';
 import { PlayerLink } from './PlayerLink';
+// [신설: 2026-09-03 09:00, 김병현 작성] MVP 카드에도 아바타(계획서 §Phase 2-2).
+import { PlayerAvatar } from './PlayerAvatar';
 import { TeamBadge } from './Badge';
 import { seriesColor } from '../theme/palette';
 import { useTheme } from '../theme/ThemeContext';
@@ -24,6 +26,7 @@ export function MvpCard({ box }: { box: GameBox }) {
     <Card className="h-full justify-center gap-2 border-l-4 px-4 py-3.5" style={{ borderLeftColor: color }}>
       <div className="text-[13px] font-medium text-secondary-foreground">이 경기 최고 기록</div>
       <div className="flex flex-wrap items-center gap-1.5">
+        <PlayerAvatar name={mvp.player.player} />
         <PlayerLink name={mvp.player.player} />
         <TeamBadge team={mvp.team} color={color} />
       </div>

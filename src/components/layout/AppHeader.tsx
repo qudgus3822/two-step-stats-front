@@ -54,10 +54,13 @@ export function AppHeader() {
               className={({ isActive }) =>
                 cn(
                   buttonVariants({ variant: isActive ? 'default' : 'ghost', size: 'sm' }),
-                  'shrink-0 whitespace-nowrap rounded-full',
+                  'shrink-0 gap-1.5 whitespace-nowrap rounded-full',
                 )
               }
             >
+              {/* [신설: 2026-09-03 09:00, 김병현 작성] 아이콘을 size-4 로 통일(계획서 §Phase 2-3 —
+                  "크기는 size-4/size-5 로 통일"). 운영자 메뉴만 있던 아이콘을 공개 메뉴까지 넓혔다. */}
+              <item.icon aria-hidden="true" className="size-4" />
               {item.label}
             </NavLink>
           ))}
@@ -79,7 +82,7 @@ export function AppHeader() {
                   )
                 }
               >
-                <span aria-hidden="true">{item.icon}</span>
+                <item.icon aria-hidden="true" className="size-4" />
                 {item.label}
               </NavLink>
             ))}
@@ -106,10 +109,11 @@ export function AppHeader() {
             className={({ isActive }) =>
               cn(
                 buttonVariants({ variant: isActive ? 'default' : 'ghost', size: 'sm' }),
-                'shrink-0 whitespace-nowrap rounded-full',
+                'shrink-0 gap-1.5 whitespace-nowrap rounded-full',
               )
             }
           >
+            <item.icon aria-hidden="true" className="size-4" />
             {item.label}
           </NavLink>
         ))}

@@ -11,6 +11,8 @@ import { gameLabel } from '../lib/format';
 import { OvertimeBadge } from '../components/Badge';
 // [변경: 2026-09-02 18:30, 김병현 수정] .page* → PageHeader (계획서 §7 Phase 4d).
 import { PageHeader } from '../components/PageHeader';
+// [신설: 2026-09-03 09:00, 김병현 작성] 페이지 아이콘(계획서 §Phase 2-3).
+import { CalendarDays } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 // 경기 목록: 대회 안의 모든 경기를 점수/승패와 함께 카드로 나열. 누르면 박스스코어로.
@@ -25,7 +27,11 @@ export function GamesPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader title="경기" sub={`${competitionLabel ?? '전체 대회'} · 눌러서 박스스코어 보기`} />
+      <PageHeader
+        icon={CalendarDays}
+        title="경기"
+        sub={`${competitionLabel ?? '전체 대회'} · 눌러서 박스스코어 보기`}
+      />
 
       {/* [변경: 2026-07-15 10:28, 김병현 수정] loading→isLoading, error→error.message, reload→refetch */}
       {isLoading && <Loading />}

@@ -1,7 +1,7 @@
 import type { PlayerWins } from '../api/types';
-// [변경: 2026-09-02 김병현 수정] 표의 선수 이름은 이 저장소에선 전부 상세로 가는 링크다
-// (마우스만 올려도 그 선수 상세를 미리 받는다).
-import { PlayerLink } from './PlayerLink';
+// [변경: 2026-09-03 09:00, 김병현 수정] PlayerLink 단독 → PlayerCell(아바타+링크)로 교체
+// (계획서 §Phase 2-2 — 시각 정체성 개편).
+import { PlayerCell } from './PlayerCell';
 import { Empty } from './states';
 import { TableScroller } from './TableScroller';
 import {
@@ -62,7 +62,7 @@ export function PlayerWinsTable({ players }: { players: PlayerWins[] }) {
                   동률에 같은 번호를 붙이는 진짜 등수 계산은 하지 않는다(순위표라기보단 명단이다). */}
               <TableCell className="text-right">{i + 1}</TableCell>
               <TableCell className="text-left font-semibold">
-                <PlayerLink name={p.player} />
+                <PlayerCell name={p.player} />
               </TableCell>
               {/* 우승 0회는 0 을 흐리게 — 숫자를 지우진 않는다(0 도 사실이다).
                   다만 굵게 두면 우승자 줄과 무게가 같아 보여서 순위표가 안 읽힌다. */}

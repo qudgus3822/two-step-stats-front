@@ -62,9 +62,13 @@ export function MobileNavSheet({ className }: MobileNavSheetProps) {
                 onMouseEnter={item.prefetch ? () => prefetch.route(item.prefetch!) : undefined}
                 onFocus={item.prefetch ? () => prefetch.route(item.prefetch!) : undefined}
                 className={({ isActive }) =>
-                  cn(buttonVariants({ variant: isActive ? 'default' : 'ghost' }), 'justify-start')
+                  cn(
+                    buttonVariants({ variant: isActive ? 'default' : 'ghost' }),
+                    'justify-start gap-2',
+                  )
                 }
               >
+                <item.icon aria-hidden="true" className="size-4" />
                 {item.label}
               </NavLink>
             </SheetClose>
@@ -86,7 +90,7 @@ export function MobileNavSheet({ className }: MobileNavSheetProps) {
                   )
                 }
               >
-                <span aria-hidden="true">{item.icon}</span>
+                <item.icon aria-hidden="true" className="size-4" />
                 {item.label}
               </NavLink>
             </SheetClose>

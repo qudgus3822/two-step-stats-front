@@ -5,6 +5,9 @@ import { ErrorView, TableSkeleton } from '../components/states';
 // [변경: 2026-09-02 19:20, 김병현 수정] .page* → PageHeader, .card* → SectionCard(계획서 §7 Phase 4f).
 import { PageHeader } from '../components/PageHeader';
 import { SectionCard } from '../components/SectionCard';
+// [신설: 2026-09-03 09:00, 김병현 작성] 페이지 아이콘(계획서 §Phase 2-3). navItems.ts 의
+// '명예의 전당' 메뉴와 같은 아이콘.
+import { Award } from 'lucide-react';
 
 // [신설: 2026-09-02 김병현 작성] 명예의 전당 — 우승 기록 '보기 전용' 화면.
 //
@@ -26,6 +29,7 @@ export function HallOfFamePage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
+        icon={Award}
         title="명예의 전당"
         sub={
           overview

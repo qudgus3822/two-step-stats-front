@@ -4,8 +4,9 @@ import { useMemo, useState } from 'react';
 import { isStaleView, usePlayers } from '../api/queries';
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — useSeason → useCompetition(리네임).
 import { useCompetition } from '../context/CompetitionContext';
-// [변경: 2026-07-29 10:36, 김병현 수정] 선수 링크를 PlayerLink 로 교체(마우스 올리면 상세 미리 받기).
-import { PlayerLink } from '../components/PlayerLink';
+// [변경: 2026-09-03 09:00, 김병현 수정] PlayerLink 단독 → PlayerCell(아바타+링크)로 교체
+// (계획서 §Phase 2-2 — 시각 정체성 개편).
+import { PlayerCell } from '../components/PlayerCell';
 import { Empty, ErrorView, TableSkeleton } from '../components/states';
 // [변경: 2026-07-15 11:37, 김병현 수정] formatAvg import 추가 — 경기당 득점 표시용.
 import { formatAvg } from '../lib/format';
@@ -13,6 +14,8 @@ import { formatAvg } from '../lib/format';
 // .page* → PageHeader, .search → Input, .table-wrap.card → Card+TableScroller,
 // .table-empty → Empty, .table → shadcn Table.
 import { PageHeader } from '../components/PageHeader';
+// [신설: 2026-09-03 09:00, 김병현 작성] 페이지 아이콘(계획서 §Phase 2-3).
+import { Users } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { TableScroller } from '../components/TableScroller';
@@ -47,7 +50,7 @@ export function PlayersPage() {
     <div className="flex flex-col gap-4">
       {/* [변경: 2026-07-15 11:37, 김병현 수정] "득점순" → "경기당 득점순"으로 문구 변경. */}
       {/* [변경: 2026-07-28 15:44, 김병현 수정] 실제 정렬이 가나다순으로 바뀌어 문구도 맞춘다. */}
-      <PageHeader title="선수" sub={`${competitionLabel ?? '전체 대회'} · 가나다순`} />
+      <PageHeader icon={Users} title="선수" sub={`${competitionLabel ?? '전체 대회'} · 가나다순`} />
 
       {/* [변경: 2026-07-15 10:28, 김병현 수정] loading→isLoading, error→error.message, reload→refetch */}
       {/* [변경: 2026-07-29 10:36, 김병현 수정] 스피너 → 표 모양 뼈대. 열 6개(#/선수/팀/출전/경기당/누적). */}
@@ -93,7 +96,7 @@ export function PlayersPage() {
                           {i + 1}
                         </TableCell>
                         <TableCell className="text-left">
-                          <PlayerLink name={p.player} />
+                          <PlayerCell name={p.player} />
                         </TableCell>
                         <TableCell className="text-left text-muted-foreground">
                           {p.teams.join(', ')}

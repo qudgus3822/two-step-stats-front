@@ -1,4 +1,6 @@
 import type { ChampionshipRoster, ChampionshipRosterPlayer } from '../api/types';
+// [신설: 2026-09-03 09:00, 김병현 작성] 선수 열 아바타(계획서 §Phase 2-2).
+import { PlayerAvatar } from './PlayerAvatar';
 import { Empty } from './states';
 import { TableScroller } from './TableScroller';
 import { Badge } from './ui/badge';
@@ -86,12 +88,15 @@ export function ChampionshipRosterTable({
                 }
               >
                 <TableCell className="text-left">
-                  <span className="font-semibold">{p.player}</span>
-                  {p.won && (
-                    <Badge variant="win" className="ml-2" title="이 대회 우승자">
-                      우승
-                    </Badge>
-                  )}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <PlayerAvatar name={p.player} />
+                    <span className="font-semibold">{p.player}</span>
+                    {p.won && (
+                      <Badge variant="win" title="이 대회 우승자">
+                        우승
+                      </Badge>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="text-left">
                   {p.topTeam ? (

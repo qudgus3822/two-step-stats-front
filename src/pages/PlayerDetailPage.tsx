@@ -3,6 +3,8 @@ import { Link, useParams } from 'react-router-dom';
 import { usePlayer } from '../api/queries';
 import type { GameResult } from '../api/types';
 import { ResultBadge, TeamBadge } from '../components/Badge';
+// [신설: 2026-09-03 09:00, 김병현 작성] 선수 상세 제목 옆 큰 아바타(계획서 §Phase 2-2).
+import { PlayerAvatar } from '../components/PlayerAvatar';
 import { ShootingSplits } from '../components/ShootingSplits';
 import { StatCard } from '../components/StatCard';
 import { TrendLine, type TrendPoint } from '../components/charts/TrendLine';
@@ -61,7 +63,12 @@ export function PlayerDetailPage() {
       {data && summary && (
         <>
           <PageHeader
-            title={data.player}
+            title={
+              <span className="flex items-center gap-3">
+                <PlayerAvatar name={data.player} size="lg" />
+                {data.player}
+              </span>
+            }
             sub={
               <span className="flex flex-wrap gap-1.5">
                 {teamsOf(data.games).map((t) => (

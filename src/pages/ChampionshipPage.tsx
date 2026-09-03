@@ -19,6 +19,9 @@ import { Empty, ErrorView, TableSkeleton } from '../components/states';
 import { PageHeader } from '../components/PageHeader';
 import { SectionCard } from '../components/SectionCard';
 import { NativeSelect, NativeSelectOption } from '../components/ui/native-select';
+// [신설: 2026-09-03 09:00, 김병현 작성] 페이지 아이콘(계획서 §Phase 2-3). navItems.ts 의
+// '우승횟수 관리' 메뉴와 같은 아이콘.
+import { Medal } from 'lucide-react';
 
 // [신설: 2026-09-02 김병현 작성] 우승횟수 관리 화면.
 //
@@ -87,6 +90,7 @@ export function ChampionshipPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
+        icon={Medal}
         title="우승횟수 관리"
         sub={
           <>

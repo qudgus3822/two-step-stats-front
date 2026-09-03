@@ -7,6 +7,8 @@
 import { useState } from "react";
 // [변경: 2026-07-29 10:36, 김병현 수정] 선수 링크를 PlayerLink 로 교체(마우스 올리면 상세 미리 받기).
 import { PlayerLink } from "../components/PlayerLink";
+// [신설: 2026-09-03 09:00, 김병현 작성] "동료" 열 아바타(계획서 §Phase 2-2 — 시각 정체성 개편).
+import { PlayerAvatar } from "../components/PlayerAvatar";
 // [변경: 2026-07-29 10:36, 김병현 수정] stale 판정을 isStaleView 로 공용화(기량 발전 화면과 같은 식).
 import { isStaleView, usePlayers, useSynergy } from "../api/queries";
 import { useCompetition } from "../context/CompetitionContext";
@@ -38,6 +40,9 @@ import { NativeSelect, NativeSelectOption } from "../components/ui/native-select
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
+// [신설: 2026-09-03 09:00, 김병현 작성] 페이지 아이콘(계획서 §Phase 2-3). navItems.ts 의
+// '시너지' 메뉴와 같은 아이콘.
+import { Users2 } from "lucide-react";
 import { cn } from "../lib/utils";
 
 // 발전률(delta) 톤 → 색 토큰. 시너지·기량발전 두 화면이 같은 규칙을 쓴다.
@@ -101,6 +106,7 @@ export function SynergyPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
+        icon={Users2}
         title="시너지"
         sub={`${competitionLabel ?? "전체 대회"} · 같은 팀으로 함께 뛴 경기 기준`}
       />
@@ -228,27 +234,28 @@ function SynergyTable({
                     {row.rank ?? "—"}
                   </TableCell>
                   <TableCell className="text-left">
-                    {/* 상세를 여닫는 disclosure 버튼. aria-pressed 가 아니라 aria-expanded 다 —
-                        같은 이름을 다시 누르면 접혀야 스크린리더 사용자에게 거짓말이 안 된다.
-                        aria-controls 는 패널이 실제로 그려질 때만 건다(없는 id 를 가리키면 안 되니까).
-                        [변경: 2026-09-02 17:40, 김병현 수정] .link-btn → Button(variant=link).
-                        aria-expanded:underline 을 직접 이식 — 펼침의 유일한 시각 신호(계획서 §5-2). */}
-                    <Button
-                      type="button"
-                      variant="link"
-                      size="sm"
-                      className="h-auto p-0 aria-expanded:underline"
-                      aria-expanded={isPicked}
-                      aria-controls={isPicked ? "synergy-detail" : undefined}
-                      onClick={() => onPick(isPicked ? null : row.teammate)}
-                    >
-                      {row.teammate}
-                    </Button>
-                    {!row.qualified && (
-                      <Badge variant="team" className="ml-1.5">
-                        표본 부족
-                      </Badge>
-                    )}
+                    {/* [변경: 2026-09-03 09:00, 김병현 수정] 아바타를 앞에 놓고 한 줄(flex)로
+                        묶는다(계획서 §Phase 2-2). */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <PlayerAvatar name={row.teammate} />
+                      {/* 상세를 여닫는 disclosure 버튼. aria-pressed 가 아니라 aria-expanded 다 —
+                          같은 이름을 다시 누르면 접혀야 스크린리더 사용자에게 거짓말이 안 된다.
+                          aria-controls 는 패널이 실제로 그려질 때만 건다(없는 id 를 가리키면 안 되니까).
+                          [변경: 2026-09-02 17:40, 김병현 수정] .link-btn → Button(variant=link).
+                          aria-expanded:underline 을 직접 이식 — 펼침의 유일한 시각 신호(계획서 §5-2). */}
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 aria-expanded:underline"
+                        aria-expanded={isPicked}
+                        aria-controls={isPicked ? "synergy-detail" : undefined}
+                        onClick={() => onPick(isPicked ? null : row.teammate)}
+                      >
+                        {row.teammate}
+                      </Button>
+                      {!row.qualified && <Badge variant="team">표본 부족</Badge>}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">{row.togetherGames}</TableCell>
                   <TableCell className="text-right tabular-nums text-muted-foreground">

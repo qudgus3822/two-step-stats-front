@@ -6,6 +6,8 @@ import type { PlayerLine } from '../api/types';
 import { efficiency, formatPctOrDash } from '../lib/format';
 // [신설: 2026-09-02 15:20, 김병현 작성] 팀 안 최고 득점자 찾기 — 그 줄만 강조한다.
 import { topScorerName } from '../lib/gameBoxSummary';
+// [신설: 2026-09-03 09:00, 김병현 작성] 박스스코어 행에도 아바타(계획서 §Phase 2-2).
+import { PlayerAvatar } from './PlayerAvatar';
 import { TableScroller } from './TableScroller';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { cn } from '../lib/utils';
@@ -67,12 +69,15 @@ export function BoxScoreTable({ players, accentColor }: BoxScoreTableProps) {
                 className={cn(i % 2 === 1 && 'bg-muted/30', isTop && 'bg-primary/10 hover:bg-primary/15')}
               >
                 <TableCell className="text-left">
-                  <Link
-                    className={cn('font-medium text-primary hover:underline', isTop && 'font-semibold')}
-                    to={`/players/${encodeURIComponent(p.player)}`}
-                  >
-                    {p.player}
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <PlayerAvatar name={p.player} />
+                    <Link
+                      className={cn('font-medium text-primary hover:underline', isTop && 'font-semibold')}
+                      to={`/players/${encodeURIComponent(p.player)}`}
+                    >
+                      {p.player}
+                    </Link>
+                  </div>
                 </TableCell>
                 {/* [변경: 2026-07-15 13:01, 김병현 수정] 이 경기 EFF = efficiency(선수 박스). PlayerLine 이 BoxScore 를 상속해 그대로 넘김. */}
                 <TableCell
