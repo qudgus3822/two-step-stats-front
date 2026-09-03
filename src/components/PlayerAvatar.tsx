@@ -24,7 +24,9 @@ export function PlayerAvatar({ name, size = 'sm', className }: PlayerAvatarProps
   const color = seriesColor(tokens, playerColorIndex(name, tokens.series.length));
 
   return (
-    <Avatar size={size} className={cn('shrink-0', className)}>
+    // [변경: 2026-09-03] aria-hidden — 이 아바타는 항상 실제 이름(PlayerLink 등) 바로 옆에
+    // 붙어 나온다. 안 감추면 스크린리더가 "김, 김병현"처럼 이니셜을 이름과 따로 두 번 읽는다.
+    <Avatar aria-hidden="true" size={size} className={cn('shrink-0', className)}>
       {/* 배경은 그 선수 색의 옅은 틴트, 글자는 그 색 그대로 — Badge(variant=team)와 같은
           "옅은 배경 + 진한 글자" 조합이라 이 화면의 다른 칩들과 톤이 어긋나지 않는다. */}
       <AvatarFallback
