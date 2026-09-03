@@ -22,6 +22,21 @@ import { ErrorView, Loading } from '../components/states';
 import { UploadConfirmModal } from '../components/UploadConfirmModal';
 // [변경: 2026-08-25 16:40, 김병현 수정] 원본 데이터 내려받기 카드(업로드의 반대 방향).
 import { RawDataExportCard } from '../components/RawDataExportCard';
+// [변경: 2026-09-02 19:50, 김병현 수정] 아래 8줄 — 계획서 §7 Phase 4g.
+// .page* → PageHeader, .card.upload-card → SectionCard, .season-*/.field* → NativeSelect+Input,
+// .season-chip* → Badge(data-selected), .dropzone* → Tailwind(data-state), .btn* → Button,
+// .upload-warn/.upload-info → Alert, .code-chip* → Badge, .warn-list → list-disc pl-[18px].
+import { PageHeader } from '../components/PageHeader';
+import { SectionCard } from '../components/SectionCard';
+// [신설: 2026-09-03 09:00, 김병현 작성] 페이지 아이콘(계획서 §Phase 2-3). navItems.ts 의
+// '업로드' 메뉴와 같은 아이콘.
+import { Lock } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
+import { Badge } from '../components/ui/badge';
+import { Button, buttonVariants } from '../components/ui/button';
+import { Card, CardContent } from '../components/ui/card';
+import { Input } from '../components/ui/input';
+import { NativeSelect, NativeSelectOption } from '../components/ui/native-select';
 
 // 기록지 엑셀 업로드 화면.
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — 업로드할 엑셀은 여전히 6컬럼
@@ -194,47 +209,50 @@ export function UploadPage() {
     performUpload(false);
   }
 
+  // [신설: 2026-09-02 19:50, 김병현 작성] 옛 `dropzone${dragOver?...}${file?...}` 템플릿 리터럴
+  // 상태 클래스를 data-state 속성으로 바꿨다(AC 66 — className 안 ${} 상태 클래스 0건).
+  const dropzoneState = dragOver ? 'drag' : file ? 'file' : undefined;
+
   return (
-    <div className="page">
-      <div className="page-head">
-        <h1 className="page-title">기록지 업로드</h1>
-        <p className="page-sub">
-          대회(연도+시즌번호+대회명)를 정하고 엑셀(.xlsx) 기록지를 올리면 서버가 읽어서 저장해요.
-        </p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        icon={Lock}
+        title="기록지 업로드"
+        sub="대회(연도+시즌번호+대회명)를 정하고 엑셀(.xlsx) 기록지를 올리면 서버가 읽어서 저장해요."
+      />
 
       {/* 1) 대회 — 엑셀엔 대회 칸이 없어서 여기서 연도+시즌번호+대회명으로 정한다. 업로드 시 자동 등록(upsert). */}
-      <section className="card upload-card">
-        <div className="card-head">
-          <h2 className="card-title">대회</h2>
-          <span className="card-note">
+      <SectionCard
+        title="대회"
+        note={
+          <>
             선택한 대회: <b>{preview ?? '대회명을 입력하세요'}</b>
-          </span>
-        </div>
-
-        <div className="season-compose">
-          <label className="field season-field">
-            <span className="field-label">연도</span>
-            <select
-              className="select"
+          </>
+        }
+        className="max-w-[660px]"
+      >
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1.5 text-sm">
+            <span className="font-medium">연도</span>
+            <NativeSelect
               value={year}
               onChange={(e) => setYear(Number(e.target.value))}
               aria-label="연도 선택"
             >
               {YEAR_OPTIONS.map((y) => (
-                <option key={y} value={y}>
+                <NativeSelectOption key={y} value={y}>
                   {y}
-                </option>
+                </NativeSelectOption>
               ))}
-            </select>
+            </NativeSelect>
           </label>
 
           {/* 시즌번호(선택) — 라벨/필드명은 그대로 "시즌번호". 지정안함 토글로 null ↔ 값을 오간다. */}
-          <div className="field season-field">
-            <span className="field-label">시즌번호</span>
-            <div className="season-seasonno">
-              <input
-                className="select"
+          <div className="flex flex-col gap-1.5 text-sm">
+            <span className="font-medium">시즌번호</span>
+            <div className="flex items-center gap-1.5">
+              <Input
+                className="w-[84px]"
                 type="number"
                 min={1}
                 value={seasonNo ?? ''}
@@ -242,20 +260,21 @@ export function UploadPage() {
                 onChange={(e) => setSeasonNo(parseSeasonNoInput(e.target.value))}
                 aria-label="시즌번호 입력"
               />
-              <button
+              <Button
                 type="button"
-                className="btn"
+                variant="outline"
+                size="sm"
                 onClick={() => setSeasonNo((prev) => (prev == null ? 1 : null))}
               >
                 {seasonNo != null ? '지정안함' : '시즌번호 지정'}
-              </button>
+              </Button>
             </div>
           </div>
 
-          <label className="field season-field">
-            <span className="field-label">대회명</span>
-            <input
-              className="search field-input"
+          <label className="flex flex-col gap-1.5 text-sm">
+            <span className="font-medium">대회명</span>
+            <Input
+              className="max-w-[320px]"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -264,7 +283,7 @@ export function UploadPage() {
             />
           </label>
 
-          <span className="season-label-preview" aria-live="polite">
+          <span className="pb-1.5 text-sm text-secondary-foreground" aria-live="polite">
             {preview ? (
               <>
                 → <b>{preview}</b> 로 저장돼요
@@ -276,117 +295,129 @@ export function UploadPage() {
         </div>
 
         {/* 이미 등록된 대회 (눌러서 빠르게 선택 / ✕ 로 등록 해제) */}
-        <div className="season-registered">
+        <div className="mt-3.5 flex flex-col gap-2">
           {competitionsLoading && <Loading label="등록된 대회 불러오는 중…" />}
-          {competitionsError && (
-            <ErrorView message={competitionsError} onRetry={refresh} />
-          )}
+          {competitionsError && <ErrorView message={competitionsError} onRetry={refresh} />}
           {competitions.length > 0 && (
             <>
-              <span className="field-hint">등록된 대회 (눌러서 선택)</span>
-              <div className="season-chips">
-                {competitions.map((c) => (
-                  <div
-                    key={c.id}
-                    className={`season-chip${c.label === preview ? ' is-selected' : ''}`}
-                  >
-                    <button
-                      type="button"
-                      className="season-chip-name"
-                      onClick={() => pickRegistered(c)}
-                      aria-pressed={c.label === preview}
+              <span className="text-xs text-muted-foreground">등록된 대회 (눌러서 선택)</span>
+              <div className="flex flex-wrap gap-2">
+                {competitions.map((c) => {
+                  const isSelected = c.label === preview;
+                  return (
+                    // [변경: 2026-09-02 19:50, 김병현 수정] .season-chip.is-selected →
+                    // data-selected 속성 + group(계획서 §5-3). aria-pressed 는 그대로 유지.
+                    <Badge
+                      key={c.id}
+                      variant="outline"
+                      data-selected={isSelected}
+                      className="group h-auto gap-0 overflow-hidden rounded-full p-0 data-[selected=true]:border-primary data-[selected=true]:bg-primary/12"
                     >
-                      {c.label}
-                    </button>
-                    {/* [변경: 2026-07-15 10:28, 김병현 수정] deletingId → deleteMutation 진행 상태(어느 칩이 삭제 중인지는 variables 로 구분) */}
-                    <button
-                      type="button"
-                      className="season-chip-del"
-                      onClick={() => handleDelete(c.id)}
-                      disabled={deleteMutation.isPending && deleteMutation.variables === c.id}
-                      aria-label={`${c.label} 등록 해제`}
-                      title="등록 해제"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
+                      <button
+                        type="button"
+                        className="px-3.5 py-1.5 text-[13px] font-semibold group-data-[selected=true]:text-primary"
+                        onClick={() => pickRegistered(c)}
+                        aria-pressed={isSelected}
+                      >
+                        {c.label}
+                      </button>
+                      {/* [변경: 2026-07-15 10:28, 김병현 수정] deletingId → deleteMutation 진행 상태(어느 칩이 삭제 중인지는 variables 로 구분) */}
+                      <button
+                        type="button"
+                        className="px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={() => handleDelete(c.id)}
+                        disabled={deleteMutation.isPending && deleteMutation.variables === c.id}
+                        aria-label={`${c.label} 등록 해제`}
+                        title="등록 해제"
+                      >
+                        ✕
+                      </button>
+                    </Badge>
+                  );
+                })}
               </div>
             </>
           )}
           {/* [변경: 2026-07-15 10:28, 김병현 수정] competitionError → deleteMutation.error.message */}
           {deleteMutation.error && (
-            <span className="field-hint field-hint--warn">{deleteMutation.error.message}</span>
+            <span className="text-xs text-warning-foreground">{deleteMutation.error.message}</span>
           )}
         </div>
-      </section>
+      </SectionCard>
 
       {/* 2) 파일 업로드 — 경기/주차/쿼터/선수/스텟/팀은 파일 안에서 읽는다 */}
-      <form className="card upload-card" onSubmit={handleUpload}>
-        <div className="card-head">
-          <h2 className="card-title">기록지 파일 (.xlsx)</h2>
-          <span className="card-note">
-            업로드 대상: <b>{preview ?? '대회명을 입력하세요'}</b>
-          </span>
-        </div>
-
-        <label
-          className={`dropzone${dragOver ? ' is-dragover' : ''}${file ? ' has-file' : ''}`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragOver(true);
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
-        >
-          <input
-            ref={fileInputRef}
-            className="dropzone-input"
-            type="file"
-            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
-          />
-          {file ? (
-            <span className="dropzone-file">
-              <span className="dropzone-icon" aria-hidden="true">
-                📄
+      <Card className="max-w-[660px]">
+        <form onSubmit={handleUpload}>
+          <CardContent className="flex flex-col gap-3.5">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="font-heading text-base leading-snug font-medium">
+                기록지 파일 (.xlsx)
+              </h2>
+              <span className="text-sm text-muted-foreground">
+                업로드 대상: <b>{preview ?? '대회명을 입력하세요'}</b>
               </span>
-              <span className="dropzone-name">{file.name}</span>
-              <span className="dropzone-size">{formatBytes(file.size)}</span>
-            </span>
-          ) : (
-            <span className="dropzone-empty">
-              <span className="dropzone-icon" aria-hidden="true">
-                📥
-              </span>
-              <span>여기로 .xlsx 파일을 끌어다 놓거나 눌러서 고르세요</span>
-            </span>
-          )}
-        </label>
-        {file && !looksLikeXlsx(file) && (
-          <span className="field-hint field-hint--warn">
-            .xlsx 파일이 아닌 것 같아요. 기록지 원본(.xlsx)이 맞는지 확인해 주세요.
-          </span>
-        )}
+            </div>
 
-        {/* [변경: 2026-07-15 10:28, 김병현 수정] uploading → uploadMutation.isPending */}
-        <div className="upload-actions">
-          <button type="submit" className="btn btn--primary" disabled={!canUpload}>
-            {uploadMutation.isPending ? '업로드 중…' : preview ? `${preview} 로 업로드` : '업로드'}
-          </button>
-          {file && !uploadMutation.isPending && (
-            <button type="button" className="btn" onClick={resetFile}>
-              파일 지우기
-            </button>
-          )}
-          <span className="field-hint">
-            같은 대회·경기를 다시 올리면 그 경기 기록만 새 파일로 덮어써요.
-          </span>
-        </div>
-      </form>
+            <label
+              data-state={dropzoneState}
+              className="relative flex min-h-30 cursor-pointer items-center justify-center rounded-xl border-[1.5px] border-dashed border-baseline p-5 text-center transition-colors hover:border-primary hover:bg-primary/5 data-[state=drag]:border-solid data-[state=drag]:bg-primary/10 data-[state=file]:border-solid data-[state=file]:border-chart-2 data-[state=file]:bg-chart-2/7"
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+            >
+              <input
+                ref={fileInputRef}
+                className="absolute inset-0 cursor-pointer opacity-0"
+                type="file"
+                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
+              />
+              {file ? (
+                <span className="pointer-events-none inline-flex items-center gap-2.5 text-secondary-foreground">
+                  <span className="text-2xl" aria-hidden="true">
+                    📄
+                  </span>
+                  <span className="font-semibold break-all text-foreground">{file.name}</span>
+                  <span className="text-xs text-muted-foreground">{formatBytes(file.size)}</span>
+                </span>
+              ) : (
+                <span className="pointer-events-none inline-flex items-center gap-2.5 text-secondary-foreground">
+                  <span className="text-2xl" aria-hidden="true">
+                    📥
+                  </span>
+                  <span>여기로 .xlsx 파일을 끌어다 놓거나 눌러서 고르세요</span>
+                </span>
+              )}
+            </label>
+            {file && !looksLikeXlsx(file) && (
+              <span className="text-xs text-warning-foreground">
+                .xlsx 파일이 아닌 것 같아요. 기록지 원본(.xlsx)이 맞는지 확인해 주세요.
+              </span>
+            )}
+
+            {/* [변경: 2026-07-15 10:28, 김병현 수정] uploading → uploadMutation.isPending */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              <Button type="submit" disabled={!canUpload}>
+                {uploadMutation.isPending ? '업로드 중…' : preview ? `${preview} 로 업로드` : '업로드'}
+              </Button>
+              {file && !uploadMutation.isPending && (
+                <Button type="button" variant="outline" onClick={resetFile}>
+                  파일 지우기
+                </Button>
+              )}
+              <span className="text-xs text-muted-foreground">
+                같은 대회·경기를 다시 올리면 그 경기 기록만 새 파일로 덮어써요.
+              </span>
+            </div>
+          </CardContent>
+        </form>
+      </Card>
 
       {uploadError && (
-        <div className="upload-feedback">
+        <div className="max-w-[660px]">
           <ErrorView message={uploadError} />
         </div>
       )}
@@ -419,6 +450,8 @@ export function UploadPage() {
 }
 
 // 업로드 성공 결과 카드: 적재 건수 + (있으면) 미등록 코드/경고 + 다음 행동 링크.
+// [변경: 2026-09-02 19:50, 김병현 수정] 아이콘+제목+부제 조합 헤더가 SectionCard 의 표준
+// 레이아웃(제목=h2 한 줄)과 달라서 Card 를 직접 쓴다(계획서 §3 "특이 헤더는 Card 직접 사용").
 function UploadResultCard({
   result,
   onReset,
@@ -442,87 +475,109 @@ function UploadResultCard({
   const hasTurnover = hangulFixes.some((h) => h.to === 'T');
 
   return (
-    <div className="card upload-result">
-      <div className="upload-result-head">
-        <span className="upload-result-icon" aria-hidden="true">
-          ✅
-        </span>
-        <div>
-          <strong className="upload-result-title">업로드 완료</strong>
-          <p className="upload-result-sub">
-            <b>{result.competition}</b> 대회에 {result.imported.toLocaleString()}건 적재
-            <span className="dot-sep">·</span>시트 {result.sheet}
-            <span className="dot-sep">·</span>
-            {result.mode === 'replace' ? '그 경기 교체' : '증분 추가'}
-          </p>
-        </div>
-      </div>
-
-      {hangulFixes.length > 0 && (
-        <div className="upload-info">
-          <strong>
-            한글로 입력된 코드 {hangulFixes.length}종 {hangulRows.toLocaleString()}건을 자동 인식했어요
-          </strong>
-          <div className="code-chips">
-            {hangulFixes.map((h) => (
-              <span key={h.from} className="code-chip code-chip--info">
-                {h.from} → {h.to} · {h.count.toLocaleString()}건
-              </span>
-            ))}
+    <Card className="max-w-[660px]">
+      <CardContent className="flex flex-col gap-3.5">
+        <div className="flex items-start gap-3">
+          <span className="text-2xl" aria-hidden="true">
+            ✅
+          </span>
+          <div>
+            <strong className="text-base">업로드 완료</strong>
+            <p className="mt-1 text-secondary-foreground">
+              <b>{result.competition}</b> 대회에 {result.imported.toLocaleString()}건 적재
+              <span className="mx-1.5">·</span>시트 {result.sheet}
+              <span className="mx-1.5">·</span>
+              {result.mode === 'replace' ? '그 경기 교체' : '증분 추가'}
+            </p>
           </div>
-          <span className="field-hint">
-            한영 전환을 깜빡하고 친 것으로 보여, 자판을 되돌려 읽었어요. <b>위 목록이 기록지에 적은 뜻과
-            같은지 한 번만 봐 주세요.</b>
-            {hasTurnover && (
-              <> 특히 스틸 뜻으로 적은 <code>ㅅ</code> 은 턴오버(<code>T</code>)로 읽힙니다.</>
+        </div>
+
+        {hangulFixes.length > 0 && (
+          <Alert className="border-info-soft bg-info-soft">
+            <AlertTitle>
+              한글로 입력된 코드 {hangulFixes.length}종 {hangulRows.toLocaleString()}건을 자동 인식했어요
+            </AlertTitle>
+            <AlertDescription>
+              <div className="flex flex-wrap gap-1.5">
+                {hangulFixes.map((h) => (
+                  <Badge
+                    key={h.from}
+                    variant="outline"
+                    className="border-transparent bg-info-chip font-mono text-info-foreground"
+                  >
+                    {h.from} → {h.to} · {h.count.toLocaleString()}건
+                  </Badge>
+                ))}
+              </div>
+              <p className="mt-2">
+                한영 전환을 깜빡하고 친 것으로 보여, 자판을 되돌려 읽었어요. <b>위 목록이 기록지에 적은 뜻과
+                같은지 한 번만 봐 주세요.</b>
+                {hasTurnover && (
+                  <> 특히 스틸 뜻으로 적은 <code>ㅅ</code> 은 턴오버(<code>T</code>)로 읽힙니다.</>
+                )}
+              </p>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {hasUnknown && (
+          <Alert className="border-warning-soft bg-warning-soft">
+            <AlertTitle>사전에 없는 스텟 코드 {result.unknownCodes.length}종</AlertTitle>
+            <AlertDescription>
+              <div className="flex flex-wrap gap-1.5">
+                {result.unknownCodes.map((code) => (
+                  <Badge
+                    key={code}
+                    variant="outline"
+                    className="border-transparent bg-warning-chip font-mono text-warning-foreground"
+                  >
+                    {code}
+                  </Badge>
+                ))}
+              </div>
+              <p className="mt-2">기록지 오타일 수 있어요. 그래도 적재는 됐으니, 원본에서 한번 확인해 보세요.</p>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {hasWarnings && (
+          <details className="text-sm text-secondary-foreground">
+            <summary className="cursor-pointer font-semibold">
+              경고 {result.warnings.length}건 자세히 보기
+            </summary>
+            {/* [변경: 2026-09-02 19:50, 김병현 수정] .warn-list → list-disc pl-[18px] 로 직접 지정
+                (계획서 §5-5). preflight 가 지운 불릿을 되살리던 legacy 보정 CSS(.warn-list{list-style:disc})
+                는 이 화면이 마지막 사용처라 styles.css 에서 같이 삭제한다. */}
+            <ul className="mt-2 flex list-disc flex-col gap-1 pl-[18px]">
+              {result.warnings.slice(0, WARN_PREVIEW).map((w, i) => (
+                <li key={`${w.row}-${i}`}>
+                  {w.row}행 · {w.player} · <code>{w.code}</code>
+                </li>
+              ))}
+            </ul>
+            {result.warnings.length > WARN_PREVIEW && (
+              <span className="text-xs text-muted-foreground">
+                …외 {result.warnings.length - WARN_PREVIEW}건
+              </span>
             )}
-          </span>
+          </details>
+        )}
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* [변경: 2026-09-02 19:50, 김병현 수정] Button asChild 대신 buttonVariants 를 Link 에 직접
+              적용 — Radix 트리거 문맥이 아니라 순수 내비게이션 링크라 asChild 자체는 안전하지만
+              (Phase 2 에서 확인), 콘솔 경고까지 없애려면 이 방법이 더 낫다(계획서 §D5 우회법 응용). */}
+          <Link to="/games" className={buttonVariants({})}>
+            경기로 확인하기
+          </Link>
+          <Link to="/" className={buttonVariants({ variant: 'outline' })}>
+            대시보드
+          </Link>
+          <Button type="button" variant="outline" onClick={onReset}>
+            또 올리기
+          </Button>
         </div>
-      )}
-
-      {hasUnknown && (
-        <div className="upload-warn">
-          <strong>사전에 없는 스텟 코드 {result.unknownCodes.length}종</strong>
-          <div className="code-chips">
-            {result.unknownCodes.map((code) => (
-              <span key={code} className="code-chip">
-                {code}
-              </span>
-            ))}
-          </div>
-          <span className="field-hint">
-            기록지 오타일 수 있어요. 그래도 적재는 됐으니, 원본에서 한번 확인해 보세요.
-          </span>
-        </div>
-      )}
-
-      {hasWarnings && (
-        <details className="upload-warn-detail">
-          <summary>경고 {result.warnings.length}건 자세히 보기</summary>
-          <ul className="warn-list">
-            {result.warnings.slice(0, WARN_PREVIEW).map((w, i) => (
-              <li key={`${w.row}-${i}`}>
-                {w.row}행 · {w.player} · <code>{w.code}</code>
-              </li>
-            ))}
-          </ul>
-          {result.warnings.length > WARN_PREVIEW && (
-            <span className="field-hint">…외 {result.warnings.length - WARN_PREVIEW}건</span>
-          )}
-        </details>
-      )}
-
-      <div className="upload-actions">
-        <Link className="btn btn--primary" to="/games">
-          경기로 확인하기
-        </Link>
-        <Link className="btn" to="/">
-          대시보드
-        </Link>
-        <button type="button" className="btn" onClick={onReset}>
-          또 올리기
-        </button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

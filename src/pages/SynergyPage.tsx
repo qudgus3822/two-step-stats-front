@@ -7,6 +7,8 @@
 import { useState } from "react";
 // [변경: 2026-07-29 10:36, 김병현 수정] 선수 링크를 PlayerLink 로 교체(마우스 올리면 상세 미리 받기).
 import { PlayerLink } from "../components/PlayerLink";
+// [신설: 2026-09-03 09:00, 김병현 작성] "동료" 열 아바타(계획서 §Phase 2-2 — 시각 정체성 개편).
+import { PlayerAvatar } from "../components/PlayerAvatar";
 // [변경: 2026-07-29 10:36, 김병현 수정] stale 판정을 isStaleView 로 공용화(기량 발전 화면과 같은 식).
 import { isStaleView, usePlayers, useSynergy } from "../api/queries";
 import { useCompetition } from "../context/CompetitionContext";
@@ -26,6 +28,29 @@ import {
   formatDelta,
 } from "../lib/format";
 import { useTheme } from "../theme/ThemeContext";
+// [변경: 2026-09-02 17:40, 김병현 수정] 아래 8줄 — 계획서 §7 Phase 4c.
+// .page* → PageHeader, .synergy-controls/-pick → NativeSelect, .metric-tabs* → useMetricTabs,
+// .card* → SectionCard, .table-wrap/.table → TableScroller + shadcn Table,
+// .link-btn → Button(variant=link), .badge → Badge(variant=team).
+import { PageHeader } from "../components/PageHeader";
+import { SectionCard } from "../components/SectionCard";
+import { useMetricTabs } from "../components/MetricTabs";
+import { TableScroller } from "../components/TableScroller";
+import { NativeSelect, NativeSelectOption } from "../components/ui/native-select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+// [신설: 2026-09-03 09:00, 김병현 작성] 페이지 아이콘(계획서 §Phase 2-3). navItems.ts 의
+// '시너지' 메뉴와 같은 아이콘.
+import { Users2 } from "lucide-react";
+import { cn } from "../lib/utils";
+
+// 발전률(delta) 톤 → 색 토큰. 시너지·기량발전 두 화면이 같은 규칙을 쓴다.
+const DELTA_CLASS: Record<"good" | "bad" | "flat", string> = {
+  good: "text-win",
+  bad: "text-loss",
+  flat: "text-muted-foreground",
+};
 
 export function SynergyPage() {
   const { competitionId, competitionLabel } = useCompetition();
@@ -69,14 +94,22 @@ export function SynergyPage() {
   // (기량 발전 화면이 리뷰 R1/R2 로 먼저 고쳤던 구멍이 여기에도 있었다).
   const stale = isStaleView(synergyQuery);
 
+  // [신설: 2026-09-02 17:40, 김병현 작성] 탭 UI + 탭↔패널 ARIA 연결을 useMetricTabs 가 대신 짜 준다.
+  const { tabs, panelProps } = useMetricTabs({
+    metrics: SYNERGY_METRICS,
+    labels: METRIC_LABELS,
+    value: metric,
+    onChange: setMetric,
+    ariaLabel: "시너지 지표",
+  });
+
   return (
-    <div className="page">
-      <div className="page-head">
-        <h1 className="page-title">시너지</h1>
-        <p className="page-sub">
-          {competitionLabel ?? "전체 대회"} · 같은 팀으로 함께 뛴 경기 기준
-        </p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        icon={Users2}
+        title="시너지"
+        sub={`${competitionLabel ?? "전체 대회"} · 같은 팀으로 함께 뛴 경기 기준`}
+      />
 
       {/* [변경: 2026-07-29 10:36, 김병현 수정] 스피너 → 동료 순위표 모양 뼈대(열 7개). */}
       {playersQuery.isLoading && <TableSkeleton rows={8} cols={7} />}
@@ -92,38 +125,23 @@ export function SynergyPage() {
 
       {basePlayer && (
         <>
-          <div className="synergy-controls">
-            <label className="synergy-pick">
-              <span className="synergy-pick-caption">기준 선수</span>
-              <select
-                className="select"
-                value={basePlayer}
-                onChange={(e) => setPickedPlayer(e.target.value)}
-                aria-label="기준 선수 선택"
-              >
-                {players.map((p) => (
-                  <option key={p.player} value={p.player}>
-                    {p.player} ({p.games}경기)
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+          <label className="flex shrink-0 items-center gap-1.5 text-sm">
+            <span className="shrink-0 text-muted-foreground">기준 선수</span>
+            <NativeSelect
+              className="max-w-[9rem] sm:max-w-none"
+              value={basePlayer}
+              onChange={(e) => setPickedPlayer(e.target.value)}
+              aria-label="기준 선수 선택"
+            >
+              {players.map((p) => (
+                <NativeSelectOption key={p.player} value={p.player}>
+                  {p.player} ({p.games}경기)
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
+          </label>
 
-          <div className="metric-tabs" role="tablist" aria-label="시너지 지표">
-            {SYNERGY_METRICS.map((m) => (
-              <button
-                key={m}
-                type="button"
-                role="tab"
-                aria-selected={m === metric}
-                className={`metric-tab ${m === metric ? "is-active" : ""}`}
-                onClick={() => setMetric(m)}
-              >
-                {METRIC_LABELS[m]}
-              </button>
-            ))}
-          </div>
+          {tabs}
 
           {synergyLoading && <TableSkeleton rows={8} cols={7} />}
           {synergyError && (
@@ -143,7 +161,11 @@ export function SynergyPage() {
           )}
 
           {data && rows.length > 0 && (
-            <div className={stale ? "is-stale" : ""} aria-busy={stale}>
+            <div
+              {...panelProps}
+              className={cn("flex flex-col gap-4", stale && "opacity-55 transition-opacity")}
+              aria-busy={stale}
+            >
               <SynergyTable
                 report={data}
                 metric={metric}
@@ -172,31 +194,30 @@ function SynergyTable({
   onPick: (teammate: string | null) => void;
 }) {
   return (
-    <section className="card">
-      <div className="card-head">
-        <h2 className="card-title">
-          {report.player} — {METRIC_LABELS[metric]}
-        </h2>
-        <span className="card-note">
+    <SectionCard
+      title={`${report.player} — ${METRIC_LABELS[metric]}`}
+      note={
+        <>
           평소(전체 {report.games}경기) 경기당{" "}
           {formatAvg(report.overall[metric])} · 함께 {report.minTogetherGames}
           경기 이상만 순위
-        </span>
-      </div>
-      <div className="table-wrap">
-        <table className="table">
-          <thead>
-            <tr>
-              <th className="col-rank">#</th>
-              <th className="col-name">동료</th>
-              <th>함께 뛴 수</th>
-              <th>따로 뛴 수</th>
-              <th>함께 평균</th>
-              <th>따로 평균</th>
-              <th>차이</th>
-            </tr>
-          </thead>
-          <tbody>
+        </>
+      }
+    >
+      <TableScroller label="시너지 순위">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-10 text-right">#</TableHead>
+              <TableHead className="text-left">동료</TableHead>
+              <TableHead className="text-right">함께 뛴 수</TableHead>
+              <TableHead className="text-right">따로 뛴 수</TableHead>
+              <TableHead className="text-right">함께 평균</TableHead>
+              <TableHead className="text-right">따로 평균</TableHead>
+              <TableHead className="text-right">차이</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {report.rows.map((row) => {
               const s = row.metrics[metric];
               const isPicked = picked === row.teammate;
@@ -205,35 +226,46 @@ function SynergyTable({
                   ? "flat"
                   : deltaTone(s.delta, report.betterWhen[metric]);
               return (
-                <tr
+                <TableRow
                   key={row.teammate}
-                  className={`${row.qualified ? "" : "row-muted"} ${isPicked ? "row-picked" : ""}`}
+                  className={cn(!row.qualified && "opacity-60", isPicked && "bg-primary/10")}
                 >
-                  <td className="num muted">{row.rank ?? "—"}</td>
-                  <td className="col-name">
-                    {/* 상세를 여닫는 disclosure 버튼. aria-pressed 가 아니라 aria-expanded 다 —
-                        같은 이름을 다시 누르면 접혀야 스크린리더 사용자에게 거짓말이 안 된다.
-                        aria-controls 는 패널이 실제로 그려질 때만 건다(없는 id 를 가리키면 안 되니까). */}
-                    <button
-                      type="button"
-                      className="link-btn"
-                      aria-expanded={isPicked}
-                      aria-controls={isPicked ? "synergy-detail" : undefined}
-                      onClick={() => onPick(isPicked ? null : row.teammate)}
-                    >
-                      {row.teammate}
-                    </button>
-                    {!row.qualified && (
-                      <span className="badge badge--team">표본 부족</span>
-                    )}
-                  </td>
-                  <td className="num">{row.togetherGames}</td>
-                  <td className="num muted">{row.apartGames}</td>
-                  <td className="num">{formatAvg(s.together)}</td>
-                  <td className="num muted">
+                  <TableCell className="text-right tabular-nums text-muted-foreground">
+                    {row.rank ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-left">
+                    {/* [변경: 2026-09-03 09:00, 김병현 수정] 아바타를 앞에 놓고 한 줄(flex)로
+                        묶는다(계획서 §Phase 2-2). */}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <PlayerAvatar name={row.teammate} />
+                      {/* 상세를 여닫는 disclosure 버튼. aria-pressed 가 아니라 aria-expanded 다 —
+                          같은 이름을 다시 누르면 접혀야 스크린리더 사용자에게 거짓말이 안 된다.
+                          aria-controls 는 패널이 실제로 그려질 때만 건다(없는 id 를 가리키면 안 되니까).
+                          [변경: 2026-09-02 17:40, 김병현 수정] .link-btn → Button(variant=link).
+                          aria-expanded:underline 을 직접 이식 — 펼침의 유일한 시각 신호(계획서 §5-2). */}
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 aria-expanded:underline"
+                        aria-expanded={isPicked}
+                        aria-controls={isPicked ? "synergy-detail" : undefined}
+                        onClick={() => onPick(isPicked ? null : row.teammate)}
+                      >
+                        {row.teammate}
+                      </Button>
+                      {!row.qualified && <Badge variant="team">표본 부족</Badge>}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{row.togetherGames}</TableCell>
+                  <TableCell className="text-right tabular-nums text-muted-foreground">
+                    {row.apartGames}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">{formatAvg(s.together)}</TableCell>
+                  <TableCell className="text-right tabular-nums text-muted-foreground">
                     {s.apart == null ? "—" : formatAvg(s.apart)}
-                  </td>
-                  <td className={`num strong delta-${tone}`}>
+                  </TableCell>
+                  <TableCell className={cn("text-right font-semibold tabular-nums", DELTA_CLASS[tone])}>
                     {s.delta == null ? "—" : formatDelta(s.delta)}
                     {/* 색만으로 좋고 나쁨을 알리지 않는다(WCAG 1.4.1) — CompareTable.tsx 의 .sr-only 관례를 그대로 따른다. */}
                     {tone !== "flat" && (
@@ -241,19 +273,19 @@ function SynergyTable({
                         {tone === "good" ? " 좋아짐" : " 나빠짐"}
                       </span>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               );
             })}
-          </tbody>
-        </table>
-      </div>
-      <p className="synergy-note">
+          </TableBody>
+        </Table>
+      </TableScroller>
+      <p className="mt-3 text-xs text-muted-foreground">
         같이 뛴 경기가 적으면 우연일 수 있어요. 기록이 하나도 없는 경기는
         출전으로 안 잡히고, 같은 경기라도 상대팀이었던 경기는 "따로"로 셉니다.
         선수는 이름으로만 구분해서 이름이 같은 사람은 한 사람으로 합쳐집니다.
       </p>
-    </section>
+    </SectionCard>
   );
 }
 
@@ -272,45 +304,45 @@ function SynergyDetail({
       id="synergy-detail"
       role="region"
       aria-label={`${report.player} + ${detail.teammate} 상세`}
-      className="card"
     >
-      <div className="card-head">
-        <h2 className="card-title">
-          {report.player} + {detail.teammate}
-        </h2>
-        <span className="card-note">
-          함께 {detail.togetherGames}경기 · 따로 {detail.apartGames}경기 ·{" "}
-          <PlayerLink name={detail.teammate}>
-            {detail.teammate} 상세 →
-          </PlayerLink>
-        </span>
-      </div>
-      <div className="stat-grid">
-        {SYNERGY_METRICS.map((m) => {
-          const s = detail.metrics[m];
-          const tone =
-            s.delta == null ? "flat" : deltaTone(s.delta, report.betterWhen[m]);
-          // 색(accent)만으로는 방향이 안 읽히므로 label 에 좋아짐/나빠짐을 글자로 넣는다.
-          // StatCard 를 안 고치고 접근성을 챙기는 방법(StatCard.value 는 string|number 라 마크업 불가).
-          const toneSuffix =
-            tone === "flat" ? "" : tone === "good" ? " (좋아짐)" : " (나빠짐)";
-          return (
-            <StatCard
-              key={m}
-              label={`경기당 ${METRIC_LABELS[m]}${toneSuffix}`}
-              value={s.delta == null ? "—" : formatDelta(s.delta)}
-              hint={`같이 ${formatAvg(s.together)} · 따로 ${s.apart == null ? "—" : formatAvg(s.apart)} · 평소 ${formatAvg(report.overall[m])}`}
-              accent={
-                tone === "good"
-                  ? tokens.good
-                  : tone === "bad"
-                    ? tokens.critical
-                    : tokens.baseline
-              }
-            />
-          );
-        })}
-      </div>
+      <SectionCard
+        title={`${report.player} + ${detail.teammate}`}
+        note={
+          <>
+            함께 {detail.togetherGames}경기 · 따로 {detail.apartGames}경기 ·{" "}
+            <PlayerLink name={detail.teammate}>
+              {detail.teammate} 상세 →
+            </PlayerLink>
+          </>
+        }
+      >
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {SYNERGY_METRICS.map((m) => {
+            const s = detail.metrics[m];
+            const tone =
+              s.delta == null ? "flat" : deltaTone(s.delta, report.betterWhen[m]);
+            // 색(accent)만으로는 방향이 안 읽히므로 label 에 좋아짐/나빠짐을 글자로 넣는다.
+            // StatCard 를 안 고치고 접근성을 챙기는 방법(StatCard.value 는 string|number 라 마크업 불가).
+            const toneSuffix =
+              tone === "flat" ? "" : tone === "good" ? " (좋아짐)" : " (나빠짐)";
+            return (
+              <StatCard
+                key={m}
+                label={`경기당 ${METRIC_LABELS[m]}${toneSuffix}`}
+                value={s.delta == null ? "—" : formatDelta(s.delta)}
+                hint={`같이 ${formatAvg(s.together)} · 따로 ${s.apart == null ? "—" : formatAvg(s.apart)} · 평소 ${formatAvg(report.overall[m])}`}
+                accent={
+                  tone === "good"
+                    ? tokens.good
+                    : tone === "bad"
+                      ? tokens.critical
+                      : tokens.baseline
+                }
+              />
+            );
+          })}
+        </div>
+      </SectionCard>
     </section>
   );
 }

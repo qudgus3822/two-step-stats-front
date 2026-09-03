@@ -1,10 +1,13 @@
 import { useChampionships } from '../api/queries';
 import { ChampionshipHistory } from '../components/ChampionshipHistory';
 import { PlayerWinsTable } from '../components/PlayerWinsTable';
-// [변경: 2026-09-02 김병현 수정] 우승자 표와 '아직 우승 없음' 표를 나눴다.
-import { WinlessPlayersTable } from '../components/WinlessPlayersTable';
 import { ErrorView, TableSkeleton } from '../components/states';
-import { splitByWins } from '../lib/championships';
+// [변경: 2026-09-02 19:20, 김병현 수정] .page* → PageHeader, .card* → SectionCard(계획서 §7 Phase 4f).
+import { PageHeader } from '../components/PageHeader';
+import { SectionCard } from '../components/SectionCard';
+// [신설: 2026-09-03 09:00, 김병현 작성] 페이지 아이콘(계획서 §Phase 2-3). navItems.ts 의
+// '명예의 전당' 메뉴와 같은 아이콘.
+import { Award } from 'lucide-react';
 
 // [신설: 2026-09-02 김병현 작성] 명예의 전당 — 우승 기록 '보기 전용' 화면.
 //
@@ -18,51 +21,36 @@ import { splitByWins } from '../lib/championships';
 export function HallOfFamePage() {
   const query = useChampionships();
   const overview = query.data ?? null;
-  // [변경: 2026-09-02 김병현 수정] playerWins 에는 우승 0회 선수도 들어 있다 → 두 무리로 가른다.
-  // 가르는 규칙(정렬 포함)은 lib 에 한 벌만 둔다 — 관리 화면도 같은 함수를 쓴다.
-  const { winners, winless } = splitByWins(overview?.playerWins ?? []);
+  // [변경: 2026-09-02 21:10, 김병현 수정] 우승 0회 선수를 따로 가르지 않는다.
+  // playerWins 를 서버가 준 순서 그대로 통산 우승 순위 표 하나에 넘긴다.
+  const playerWins = overview?.playerWins ?? [];
+  const winnerCount = playerWins.filter((p) => p.wins > 0).length;
 
   return (
-    <div className="page">
-      <div className="page-head">
-        <h1 className="page-title">명예의 전당</h1>
-        <p className="page-sub">
-          {overview
-            ? `역대 우승 ${overview.wins.length}건 · 우승 경험 ${winners.length}명 · 아직 없는 선수 ${winless.length}명`
-            : '역대 우승팀과 선수별 통산 우승횟수'}
-        </p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        icon={Award}
+        title="명예의 전당"
+        sub={
+          overview
+            ? `역대 우승 ${overview.wins.length}건 · 선수 ${playerWins.length}명 중 우승 경험 ${winnerCount}명`
+            : '역대 우승팀과 선수별 통산 우승횟수'
+        }
+      />
 
       {query.error && (
         <ErrorView message={query.error.message} onRetry={() => void query.refetch()} />
       )}
 
-      <section className="card">
-        <div className="card-head">
-          <h2 className="card-title">통산 우승 순위</h2>
-          <span className="card-note">승률 = 우승 ÷ 뛴 시즌</span>
-        </div>
+      <SectionCard title="통산 우승 순위" note="승률 = 우승 ÷ 뛴 시즌">
         {query.isLoading && <TableSkeleton rows={10} cols={6} />}
-        {overview && !query.error && <PlayerWinsTable winners={winners} />}
-      </section>
+        {overview && !query.error && <PlayerWinsTable players={playerWins} />}
+      </SectionCard>
 
-      <section className="card">
-        <div className="card-head">
-          <h2 className="card-title">아직 우승이 없어요 ㅜ.ㅜ</h2>
-          <span className="card-note">오래 뛴 순</span>
-        </div>
-        {query.isLoading && <TableSkeleton rows={6} cols={2} />}
-        {overview && !query.error && <WinlessPlayersTable winless={winless} />}
-      </section>
-
-      <section className="card">
-        <div className="card-head">
-          <h2 className="card-title">역대 우승팀</h2>
-          <span className="card-note">최근 시즌부터</span>
-        </div>
+      <SectionCard title="역대 우승팀" note="최근 시즌부터">
         {query.isLoading && <TableSkeleton rows={6} cols={3} />}
         {overview && !query.error && <ChampionshipHistory wins={overview.wins} />}
-      </section>
+      </SectionCard>
     </div>
   );
 }

@@ -12,6 +12,8 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys, useCompetitionsQuery } from '../api/queries';
 import type { Competition } from '../api/types';
+// [신설: 2026-09-03 09:00, 김병현 작성] "· -" 데이터 표시 버그 수정(계획서 §Phase 3, AC-6).
+import { cleanCompetitionLabel } from '../lib/format';
 
 // [변경: 2026-07-14 17:32, 김병현 수정] 대회 모델 대개편 — 옛 SeasonContext(문자열 시즌 필터)를
 // CompetitionContext 로 리네임. 대회 필터를 앱 전체가 공유하는 컨텍스트.
@@ -41,8 +43,13 @@ export function CompetitionProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const competitionsQuery = useCompetitionsQuery();
   // data 가 undefined(첫 로드)여도 항상 배열로 다룬다. 참조 안정화를 위해 memo.
+  // [변경: 2026-09-03 09:00, 김병현 수정] label 을 여기서 한 번 정제한다(cleanCompetitionLabel).
+  // 대회 선택 목록(competitions)은 이 컨텍스트가 노출하는 유일한 출처라, 여기서 한 번만
+  // 고치면 대회 피커·labelOf()·competitionLabel·이 값을 쓰는 모든 페이지 부제가 전부
+  // "2025 시즌4 · -" 대신 "2025 시즌4"로 보인다(계획서 §Phase 3, AC-6 — "· - 같은 빈 값
+  // 찌꺼기가 화면에 안 보인다"). 서버 값 자체(백엔드)는 안 건드린다 — 화면 표시만 고친다.
   const competitions = useMemo<Competition[]>(
-    () => competitionsQuery.data ?? [],
+    () => (competitionsQuery.data ?? []).map((c) => ({ ...c, label: cleanCompetitionLabel(c.label) })),
     [competitionsQuery.data],
   );
 

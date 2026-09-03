@@ -1,0 +1,230 @@
+/* ─────────────────────────────────────────────────────────────
+   [신설: 2026-09-02 13:10, 김병현 작성]
+   Tailwind v4 진입점 + 이 앱의 색·모양 어휘.
+
+   왜 이 파일 하나인가: Tailwind v4 는 설정 파일(tailwind.config)이 없다.
+   테마를 CSS 에서 선언한다(CSS-first). 그래서 색·반경·폰트가 전부 여기 모인다.
+
+   [변경: 2026-09-03 09:00, 김병현 수정] 시각 정체성 개편(visual-identity) Phase 4 —
+   옛 styles.css(legacy 레이어)를 삭제하면서 레이어 순서에서도 'legacy'를 뺐다.
+   마이그레이션 기간 동안 옛 CSS 를 가둬 뒀던 레이어라, 그 파일이 없어진 지금은
+   이름만 남아 있어도 뜻이 없다. @layer 선언문은 @import 보다 앞에 와도 되는
+   몇 안 되는 규칙이라 여기 그대로 둔다.
+   ───────────────────────────────────────────────────────────── */
+@layer theme, base, components, utilities;
+
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+/* init 이 넣어준 그대로 둔다. 서브셋으로 좁히지 않는다 —
+   이 파일엔 unicode-range 가 걸려 있어서, 브라우저가 알아서 필요한 것(한국어 페이지면 latin ≈29KB)
+   하나만 받아간다. dist 에 woff2 5개가 보여도 실제 전송은 하나다. (계획서 §D12) */
+@import "@fontsource-variable/geist";
+
+/* 다크는 <html class="dark"> 로 스위치. ThemeContext 가 이 클래스를 붙였다 뗀다. */
+@custom-variant dark (&:is(.dark *));
+
+/* ── 라이트 토큰 ────────────────────────────────────────────────
+   ⚠ 아래 hex 는 src/theme/palette.ts 의 lightTokens 와 반드시 같아야 한다.
+     Tailwind v4 는 TS 를 못 읽어서 어쩔 수 없이 두 곳에 적는다.
+     어긋나면 `npm run build` 가 실패한다 — scripts/checkPalette.mjs 가 막는다.
+
+   [변경: 2026-09-03 09:00, 김병현 수정] 시각 정체성 개편(visual-identity) Phase 1.
+   옛 팔레트를 shadcn 토큰 이름에 그대로 얹기만 했던 걸 여기서 처음 실제로 바꾼다.
+   중립색(secondary/muted/baseline)을 누런 회색에서 Tailwind Slate(차가운 회청색)로,
+   강조색(primary)을 더 선명하게, 배경↔카드 간격을 벌렸다. 승/패/무 의미색과 차트
+   2~8번 계열은 색맹 안전 검증값이라 그대로 둔다(palette.ts 상단 주석과 같은 결정). */
+:root {
+  --radius: 0.875rem;                    /* 14px — 옛 --radius 와 동일 */
+
+  --background: #f1f5f9;                 /* 옛 #f9f9f7(누런 크림) → slate-100 */
+  --foreground: #0f172a;                 /* 옛 #0b0b0b → slate-900 */
+  --card: #ffffff;                       /* 옛 #fcfcfb → 순백(배경과의 차이를 벌림) */
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+
+  --primary: #2563eb;                    /* 옛 #2a78d6 → 채도를 올린 파랑(브랜드색) */
+  --primary-foreground: #ffffff;
+  --secondary: #e2e8f0;                  /* 옛 #e1e0d9(누런 회색) → slate-200 */
+  --secondary-foreground: #475569;       /* 옛 #52514e → slate-600 */
+  --muted: #e2e8f0;
+  /* muted-foreground: slate-500(#64748b)은 배경 대비 4.39:1로 AA(4.5) 미달이라
+     500과 600 사이 값을 직접 골랐다(실측: 배경 4.97:1 / 카드 5.44:1, 둘 다 통과). */
+  --muted-foreground: #5b6b80;
+  --accent: color-mix(in srgb, var(--primary) 10%, var(--card));  /* hover 틴트 */
+  --accent-foreground: #0f172a;
+  --destructive: #d03b3b;                /* 옛 --loss */
+  --destructive-foreground: #ffffff;
+
+  --border: rgba(15, 23, 42, 0.12);      /* 옛 rgba(11,11,11,.1) → slate-900 기반 알파 */
+  --input: rgba(15, 23, 42, 0.12);
+  --ring: #2563eb;
+  /* [신설] 옛 --baseline. --border 보다 진한 중간 톤 구분선.
+     shadcn 에 대응 토큰이 없어서 새로 만든다(계획서 §D10).
+     쓰는 곳: 표 머리 밑줄 / 버튼·탭 hover 테두리 / 드롭존 점선. */
+  --baseline: #cbd5e1;                   /* 옛 #c3c2b7 → slate-300 */
+
+  /* 데이터 시각화 8색 — 색맹 안전성이 검증된 값이라 shadcn 기본색으로 대체 불가.
+     차트는 palette.ts(JS)를 쓰고, 여기 값은 CSS 쪽(스와치·테두리)용이다.
+     1번(brand accent)만 primary 와 같이 올리고, 2~8번은 그대로 둔다. */
+  --chart-1: #2563eb; --chart-2: #1baf7a; --chart-3: #eda100; --chart-4: #008300;
+  --chart-5: #4a3aa7; --chart-6: #e34948; --chart-7: #e87ba4; --chart-8: #eb6834;
+
+  /* 경기 결과 의미색. 옛 --good/--loss/--draw. 색 자체는 미변경(의미색이라 유지).
+     *-soft = 뱃지 배경. 혼합비(16/16/22%)는 옛 styles.css:345-356 그대로 — 대비 유지. */
+  --win: #0ca30c;
+  --win-soft: color-mix(in srgb, var(--win) 16%, transparent);
+  --loss: #d03b3b;
+  --loss-soft: color-mix(in srgb, var(--loss) 16%, transparent);
+  --draw: #fab219;
+  --draw-soft: color-mix(in srgb, var(--draw) 22%, transparent);
+  --draw-foreground: color-mix(in srgb, var(--draw) 70%, #000);
+
+  /* 안내 블록 2종. 혼합비는 옛 styles.css:1007-1049 그대로 이어받되, 새 팔레트로
+     다시 계산했다(2026-09-03).
+     [대비 근거 — 실측, contrast.mjs 로 WCAG 공식 그대로 계산]
+       --info-foreground 의 70%: 라이트 7.04:1(배경)/7.71:1(카드), 다크 7.06:1/5.12:1.
+       전부 AA(4.5) 넉넉히 통과 — primary·foreground 가 바뀌어도 비율은 그대로 유지.
+       --warning-foreground: 옛 72% 배합은 라이트에서 2.94:1(배경)로 AA 미달이었다
+       (다크는 12.5:1로 원래도 넉넉했다 — 라이트만 문제). 50%로 낮춰 라이트 4.94:1(배경)
+       /5.41:1(카드), 다크 14.43:1/10.46:1 — 양쪽 다 통과하는 값으로 교체했다. */
+  --warning-soft: color-mix(in srgb, var(--draw) 12%, transparent);
+  --warning-chip: color-mix(in srgb, var(--draw) 25%, transparent);
+  --warning-foreground: color-mix(in srgb, var(--draw) 50%, var(--foreground));
+  --info-soft: color-mix(in srgb, var(--primary) 10%, transparent);
+  --info-chip: color-mix(in srgb, var(--primary) 20%, transparent);
+  --info-foreground: color-mix(in srgb, var(--primary) 70%, var(--foreground));
+}
+
+/* ── 다크 토큰 ── (palette.ts 의 darkTokens 와 일치)
+   [변경: 2026-09-03 09:00, 김병현 수정] 배경→카드 명암비를 1.12:1(옛)→1.38:1로 벌렸다
+   ("카드가 배경에 묻힌다"는 진단의 핵심). background/secondary·muted/card/popover
+   4단으로 slate-950/900/800/700 을 그대로 써서 계단을 분명히 했다(계획서 "3단 이상"). */
+.dark {
+  --background: #020617;                 /* 옛 #0d0d0d(중성 검정) → slate-950 */
+  --foreground: #f8fafc;                 /* 옛 #ffffff → slate-50 */
+  --card: #1e293b;                       /* 옛 #1a1a19 → slate-800 */
+  --card-foreground: #f8fafc;
+  --popover: #334155;                    /* 옛 #1a1a19(카드와 동일) → slate-700, 카드 위 요소용 3번째 단 */
+  --popover-foreground: #f8fafc;
+
+  --primary: #2f6fe0;                    /* 옛 #3987e5 → 흰 글자 대비 3.64:1(AA 미달)이던 걸
+                                             4.70:1 로 고치면서 채도도 더 올렸다 */
+  --primary-foreground: #ffffff;
+  --secondary: #0f172a;                  /* 옛 #2c2c2a → slate-900 */
+  --secondary-foreground: #cbd5e1;       /* 옛 #c3c2b7(누런 회색) → slate-300 */
+  --muted: #0f172a;
+  --muted-foreground: #94a3b8;           /* 옛 #898781 → slate-400 */
+  --accent: color-mix(in srgb, var(--primary) 14%, var(--card));
+  --accent-foreground: #f8fafc;
+  --destructive: #d03b3b;
+
+  --border: rgba(148, 163, 184, 0.16);   /* 옛 rgba(255,255,255,.1) → slate-400 기반 알파 */
+  --input: rgba(148, 163, 184, 0.16);
+  --ring: #2f6fe0;
+  --baseline: #475569;                   /* 옛 #383835 → slate-600 */
+
+  --chart-1: #2f6fe0; --chart-2: #199e70; --chart-3: #c98500; --chart-4: #008300;
+  --chart-5: #9085e9; --chart-6: #e66767; --chart-7: #d55181; --chart-8: #d95926;
+
+  /* --win/--loss/--draw 는 라이트/다크가 같은 값(palette.ts 도 동일).
+     *-soft / *-foreground 는 var() 참조라 --foreground 가 바뀌면 자동으로 따라간다. */
+}
+
+/* ── Tailwind 유틸리티에 이름 붙이기 ──────────────────────────────
+   ⚠ @theme inline 인 이유: inline 은 "빌드할 때 값을 그대로 끼워 넣는다".
+     그래서 bg-win 이 background-color: var(--win) 으로 나가고,
+     .dark 에서 --win 을 바꾸면 런타임에 그대로 따라간다.
+     inline 없이 쓰면 Tailwind 가 값을 :root 에 한 번 복사해 버려서
+     .dark 오버라이드가 안 먹는다. */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-baseline: var(--baseline);
+
+  --color-chart-1: var(--chart-1); --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3); --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5); --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7); --color-chart-8: var(--chart-8);
+
+  --color-win: var(--win);   --color-win-soft: var(--win-soft);
+  --color-loss: var(--loss); --color-loss-soft: var(--loss-soft);
+  --color-draw: var(--draw); --color-draw-soft: var(--draw-soft);
+  --color-draw-foreground: var(--draw-foreground);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-chip: var(--warning-chip);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info-soft: var(--info-soft);
+  --color-info-chip: var(--info-chip);
+  --color-info-foreground: var(--info-foreground);
+
+  /* 반경: shadcn 관례대로 --radius 에서 덧셈/뺄셈으로 파생.
+     14px 기준 → sm 10 / md 12 / lg 14 / xl 18. 옛 --radius(14)/--radius-sm(9)와 사실상 같다. */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* [변경: 2026-09-02 13:10, 김병현 수정] init 이 넣은
+     `'Geist Variable', sans-serif` 뒤에 한글 폴백을 이어붙였다.
+     Geist 에는 한글 글리프가 없다 — 이걸 안 적으면 한글이 브라우저 기본 sans 로 떨어져
+     지금(Malgun Gothic 등)과 다르게 보인다. 계획서 §D12. */
+  --font-sans: 'Geist Variable', system-ui, -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif;
+}
+
+/* ── 기본 엘리먼트 ───────────────────────────────────────────── */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html { color-scheme: light; }
+  html.dark { color-scheme: dark; }
+  body {
+    @apply bg-background text-foreground;
+    /* [핵심] 한글을 낱글자로 쪼개지 않는다. "대회"가 대/회로 세로로 깨지던 원인. */
+    word-break: keep-all;
+    /* 그래도 긴 영문/URL 은 넘치지 않게 마지막 안전장치 */
+    overflow-wrap: break-word;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* [이관: 옛 styles.css:97-103] 굵기 650 은 shadcn 스케일(600/700)로 승격하고
+     자간만 남긴다 — 제목의 인상을 만드는 건 이쪽이다. 계획서 §D11. */
+  h1, h2, h3 { letter-spacing: -0.01em; }
+  /* recharts 가 자기 폰트를 쓰지 않게 (옛 styles.css:755-758) */
+  .recharts-wrapper { font-family: inherit; }
+  /* [신설: 2026-09-02 15:50, 김병현 작성] 중계 그래픽 리디자인 Phase D — 다크에서 카드가
+     배경에 묻히지 않게 아주 옅은 그림자로 "뜬" 느낌을 더한다. 카드 표면(--card)이 배경보다
+     밝은 건 이미 그렇지만(#1a1a19 vs #0d0d0d), 그것만으로는 납작해 보인다는 진단 때문.
+     그라데이션·글로우 없이 그림자 하나만, 아주 약하게(불투명도 낮음) — 벤더 파일(ui/card.tsx)
+     은 안 건드리고 그 컴포넌트가 심어 둔 data-slot 속성만 골라 스타일을 얹는다.
+     [변경: 2026-09-03 09:00, 김병현 수정] 시각 정체성 개편 Phase 2-4 — 라이트에도 같은 논리로
+     아주 옅은 그림자를 추가한다(카드에 깊이). 색은 --foreground 기반이라 팔레트가 또 바뀌어도
+     자동으로 톤이 맞는다(하드코딩한 검정 대신 var() 사용). */
+  [data-slot="card"] { box-shadow: 0 1px 2px color-mix(in srgb, var(--foreground) 6%, transparent); }
+  .dark [data-slot="card"] { box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); }
+  /* [이관: 옛 styles.css:748-753] 움직임을 줄여 달라는 사용자에겐 뼈대 반짝임을 멈춘다.
+     shadcn Skeleton 은 animate-pulse 만 쓰고 이 가드가 없다(원문 확인) → 여기서 전역으로 건다. */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-pulse, .shimmer { animation: none; }
+  }
+}

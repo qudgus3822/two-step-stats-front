@@ -79,6 +79,11 @@ export const efficiency = (box: BoxScore): number =>
 // [변경: 2026-07-15 13:01, 김병현 수정] 성공률을 "%" 문자열로. 리더보드 비율 차트/표 표시용.
 export const formatPct = (n: number): string => `${n}%`;
 
+// [신설: 2026-09-02 15:20, 김병현 작성] 성공률(%) 문자열, 시도 0(=null)이면 "—".
+// GameStatsPanel(팀 요약 표)·BoxScoreTable 이 각자 들고 있던 동일한 로컬 헬퍼를 하나로 모았다
+// (formatPct 는 null 을 안 받는 다른 계약이라 그대로 두고 이름을 다르게 뽑는다).
+export const formatPctOrDash = (p: number | null): string => (p == null ? '—' : `${p}%`);
+
 // [변경: 2026-07-27 16:14, 김병현 수정] 시너지 델타 표시 — 부호를 붙여 방향이 바로 보이게. 0은 "0.0".
 export const formatDelta = (n: number): string => `${n > 0 ? '+' : ''}${n.toFixed(1)}`;
 
@@ -154,3 +159,16 @@ export const GROWTH_KIND_VIEW: Record<GrowthKind, GrowthKindView> = {
     ],
   },
 };
+
+// [신설: 2026-09-03 09:00, 김병현 작성] 시각 정체성 개편(visual-identity) Phase 3 —
+// 데이터 표시 버그 수정. 대회 라벨은 서버가 `연도 시즌N · 대회명`(competition.service.ts
+// competitionLabel())으로 만드는데, 시즌이 있는 대회는 대회명 칸에 실제로 '-'(이름 없음
+// 표시용 더미 값)이 저장돼 있어서 "2025 시즌4 · -"처럼 꼬리에 " · -"가 그대로 붙어 나온다.
+// 실측(GET /championships): "2025 시즌4", "2025 시즌3" 등 시즌이 있는 대회 전부가 이 상태다.
+//
+// 백엔드 데이터(대회명 자체)를 고치는 건 이번 작업 범위 밖이라, 화면에 보여줄 때만
+// 이 꼬리를 잘라낸다 — 대회명이 통째로 '-' 하나뿐일 때만 매치되게 앵커링해서, "다이나마이트-"
+// 처럼 진짜 이름이 하이픈으로 끝나는 경우는 절대 안 건드린다.
+export function cleanCompetitionLabel(label: string): string {
+  return label.replace(/ · -$/, '').replace(/^(\d{4}) -$/, '$1');
+}

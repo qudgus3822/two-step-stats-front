@@ -2,6 +2,12 @@ import { useMutation } from '@tanstack/react-query';
 import { api } from '../api/client';
 import { saveBlob } from '../lib/download';
 import { ErrorView } from './states';
+// [변경: 2026-09-02 19:20, 김병현 수정] 아래 3줄 — 계획서 §7 Phase 4f.
+// .card.upload-card → SectionCard, .field-hint → text-xs text-muted-foreground,
+// 성공 안내(.upload-info) → Alert, .btn.btn--primary → Button.
+import { SectionCard } from './SectionCard';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Button } from './ui/button';
 
 // [신설: 2026-09-02 김병현 작성] 우승 기록 엑셀 내려받기 카드.
 //
@@ -22,44 +28,36 @@ export function ChampionshipExportCard() {
   const result = exportMutation.data ?? null;
 
   return (
-    <section className="card upload-card">
-      <div className="card-head">
-        <h2 className="card-title">우승 기록 내려받기</h2>
-        <span className="card-note">시트 2장</span>
-      </div>
-
-      <p className="field-hint">
+    <SectionCard title="우승 기록 내려받기" note="시트 2장" className="max-w-[660px]">
+      <p className="text-xs text-muted-foreground">
         기록지 원본과 같은 모양으로 내려받아요. <b>우승</b> 시트엔 연도·시즌·우승팀·멤버가,
         <b> 우승횟수</b> 시트엔 선수별 통산 횟수가 들어가요.
       </p>
 
-      <div className="export-controls">
-        <button
+      <div className="mt-3.5 flex flex-wrap items-end gap-2.5">
+        <Button
           type="button"
-          className="btn btn--primary"
           onClick={() => exportMutation.mutate()}
           disabled={exportMutation.isPending}
         >
           {exportMutation.isPending ? '만드는 중…' : '.xlsx 로 내려받기'}
-        </button>
+        </Button>
       </div>
 
-      {exportMutation.error && (
-        <div className="upload-feedback">
-          <ErrorView message={exportMutation.error.message} />
-        </div>
-      )}
+      {exportMutation.error && <ErrorView message={exportMutation.error.message} />}
 
+      {/* [변경: 2026-09-02 19:45, 김병현 수정] 옛 .upload-info(series-1 10%) → bg-info-soft
+          (계획서 §5-5 "정보 → Alert + bg-info-soft"). */}
       {result && !exportMutation.isPending && (
-        <div className="upload-info" aria-live="polite">
-          <strong>
+        <Alert className="mt-3.5 border-info-soft bg-info-soft" aria-live="polite">
+          <AlertTitle>
             내려받았어요
             {/* rowCount 가 null 이면 "모름"이다 — 0 으로 뭉개서 "0건"이라 거짓말하지 않는다. */}
             {result.rowCount != null && ` · 우승 ${result.rowCount.toLocaleString()}건`}
-          </strong>
-          <span className="field-hint">{result.fileName}</span>
-        </div>
+          </AlertTitle>
+          <AlertDescription>{result.fileName}</AlertDescription>
+        </Alert>
       )}
-    </section>
+    </SectionCard>
   );
 }
