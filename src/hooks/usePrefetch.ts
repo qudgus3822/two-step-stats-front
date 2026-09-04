@@ -29,6 +29,8 @@ import {
   synergyOptions,
 } from '../api/queries';
 import type { PlayerListItem } from '../api/types';
+// [신설: 2026-09-04 10:40, 김병현 작성] SynergyPage 와 같은 '게스트 제외' 규칙을 쓴다.
+import { isGuestPlayer } from '../lib/players';
 import { useCompetition } from '../context/CompetitionContext';
 
 // 프리페치를 붙일 수 있는 탭 주소. Layout 의 NavLink to= 와 같은 문자열이라
@@ -86,11 +88,16 @@ const ROUTE_PREFETCH: Record<
   // 시너지는 (기준 선수, 지표) 가 있어야 부를 수 있다. 기준 선수 기본값은 "목록의 첫 선수"인데,
   // 목록이 이미 캐시에 있을 때만 그걸 알 수 있다 → 있으면 리포트까지, 없으면 목록만 미리 받는다.
   // (목록이 없으면 어차피 클릭 후 목록 → 리포트 순서로 가야 해서 여기서 억지로 만들 게 없다.)
-  '/synergy': (qc, s) => {
-    void qc.prefetchQuery(playersOptions(s.competitionId));
-    const players = qc.getQueryData<PlayerListItem[]>(queryKeys.players.by(s.competitionId));
-    const basePlayer = players?.[0]?.player ?? null;
-    if (basePlayer) void qc.prefetchQuery(synergyOptions(basePlayer, 'eff', s.competitionId));
+  //
+  // [변경: 2026-09-04 10:40, 김병현 수정] 시너지 화면만 규칙이 둘 다르다 — 화면과 똑같이 맞춰야
+  // 미리 받은 게 그대로 쓰인다(키가 어긋나면 미리 받아 놓고도 다시 부른다).
+  //   1) 대회: 헤더 선택을 안 따르고 항상 '전체 대회'(null) — SynergyPage 의 SYNERGY_SCOPE_COMPETITION_ID.
+  //   2) 기준 선수: '게스트'를 뺀 목록의 첫 선수(게스트가 가나다순 맨 앞이라 안 빼면 어긋난다).
+  '/synergy': (qc) => {
+    void qc.prefetchQuery(playersOptions(null));
+    const players = qc.getQueryData<PlayerListItem[]>(queryKeys.players.by(null));
+    const basePlayer = players?.find((p) => !isGuestPlayer(p.player))?.player ?? null;
+    if (basePlayer) void qc.prefetchQuery(synergyOptions(basePlayer, 'eff', null));
   },
   // 기량 발전의 기본 탭은 'eff'. 대회가 아예 없으면(첫 실행) growthScopeId 가 null 이라 건너뛴다.
   '/growth': (qc, s) => {

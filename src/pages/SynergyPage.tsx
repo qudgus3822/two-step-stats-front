@@ -37,6 +37,9 @@ import { SectionCard } from "../components/SectionCard";
 import { useMetricTabs } from "../components/MetricTabs";
 import { TableScroller } from "../components/TableScroller";
 import { NativeSelect, NativeSelectOption } from "../components/ui/native-select";
+// [신설: 2026-09-04 10:20, 김병현 작성] "이 탭만 전체 대회 기준"을 알리는 안내줄.
+// 기량 발전 화면(GrowthPage)이 스코프 안내에 쓰는 Alert 와 같은 부품·같은 모양.
+import { Alert, AlertDescription } from "../components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -44,6 +47,14 @@ import { Badge } from "../components/ui/badge";
 // '시너지' 메뉴와 같은 아이콘.
 import { Users2 } from "lucide-react";
 import { cn } from "../lib/utils";
+// [신설: 2026-09-04 10:40, 김병현 작성] '게스트'는 회원이 아니라 기준 선수 후보에서 뺀다.
+import { isGuestPlayer } from "../lib/players";
+
+// [신설: 2026-09-04 10:20, 김병현 작성] 시너지 화면이 볼 대회 범위 = 항상 "전체 대회"(null).
+// 왜 헤더 선택을 안 따르나: 시너지는 "둘이 같이 뛴 경기"만 세는데, 한 시즌으로 자르면 그게 몇 판
+// 안 남는다. 표본이 작으면 차이가 실력이 아니라 우연(운)이 된다. 그래서 대회 필터를 아예 안 걸고
+// 모든 대회를 합쳐서 본다. 헤더의 대회 선택은 다른 탭에만 영향을 준다.
+const SYNERGY_SCOPE_COMPETITION_ID = null;
 
 // 발전률(delta) 톤 → 색 토큰. 시너지·기량발전 두 화면이 같은 규칙을 쓴다.
 const DELTA_CLASS: Record<"good" | "bad" | "flat", string> = {
@@ -53,9 +64,16 @@ const DELTA_CLASS: Record<"good" | "bad" | "flat", string> = {
 };
 
 export function SynergyPage() {
+  // [변경: 2026-09-04 10:20, 김병현 수정] 조회는 전체 대회(SYNERGY_SCOPE_COMPETITION_ID)로 고정.
+  // 헤더 선택(competitionId/competitionLabel)은 이제 "안내줄을 띄울지" 판단에만 쓴다.
   const { competitionId, competitionLabel } = useCompetition();
-  const playersQuery = usePlayers(competitionId);
-  const players = playersQuery.data ?? [];
+  const playersQuery = usePlayers(SYNERGY_SCOPE_COMPETITION_ID);
+  // [변경: 2026-09-04 10:40, 김병현 수정] '게스트'를 기준 선수 후보에서 뺀다.
+  // '게스트'는 한 사람이 아니라 "회원이 아닌 손님들"을 뭉뚱그린 이름이라(lib/players.ts 참고),
+  // 기준으로 삼으면 서로 다른 사람의 경기를 한 사람인 척 합쳐 보게 된다.
+  // 하필 가나다순에서 제일 앞이라, 안 빼면 기본 선택이 게스트가 돼 버린다.
+  // (동료 목록에는 그대로 남는다 — "게스트와 같이 뛸 때 내 기록"은 그 자체로 의미가 있다.)
+  const players = (playersQuery.data ?? []).filter((p) => !isGuestPlayer(p.player));
 
   const [pickedPlayer, setPickedPlayer] = useState<string | null>(null);
   const [metric, setMetric] = useState<SynergyMetric>("eff");
@@ -64,7 +82,8 @@ export function SynergyPage() {
   // 기준 선수: 고른 게 지금 목록에 있으면 그걸, 아니면 목록 첫 번째(= 경기당 득점 1위).
   // [변경: 2026-07-28 15:44, 김병현 수정] 서버 정렬이 가나다순으로 바뀌어, 이제 첫 번째는
   // "이름이 제일 앞선 선수"다(득점 1위 아님). 로직은 그대로 — 기본값의 의미만 달라졌다.
-  // 대회를 바꾸면 목록이 갈리므로 자동으로 첫 번째로 되돌아간다(별도 effect 불필요).
+  // [변경: 2026-09-04 10:20, 김병현 수정] 목록이 전체 대회 기준이라 헤더를 바꿔도 안 갈린다
+  // (예전엔 대회를 바꾸면 목록이 갈려 자동으로 첫 번째로 되돌아갔다).
   const basePlayer =
     pickedPlayer && players.some((p) => p.player === pickedPlayer)
       ? pickedPlayer
@@ -73,7 +92,7 @@ export function SynergyPage() {
   // 이름을 synergy* 로 구분한다. 선수 목록 쿼리(playersQuery)와 재시도 대상이 섞이면
   // "다시 시도" 버튼이 엉뚱한 쿼리를 부르게 된다.
   // [변경: 2026-07-29 10:36, 김병현 수정] 쿼리 객체를 통째로 들고 있는다(isStaleView 에 넘기려고).
-  const synergyQuery = useSynergy(basePlayer, metric, competitionId);
+  const synergyQuery = useSynergy(basePlayer, metric, SYNERGY_SCOPE_COMPETITION_ID);
   const {
     data,
     isLoading: synergyLoading,
@@ -83,12 +102,12 @@ export function SynergyPage() {
   const rows = data?.rows ?? [];
   // 펼친 동료도 같은 방식(파생 계산)으로 검증한다. 지금 rows 에 없으면 상세를 안 그린다.
   // 지표 탭을 바꿔도 rows 가 (placeholderData 덕분에) 한 순간도 비지 않아 상세가 안 사라진다.
-  // 기준 선수·대회를 바꿔 rows 자체가 갈리면, 새 rows 에 없는 동료의 상세는 자동으로 닫힌다.
+  // 기준 선수를 바꿔 rows 자체가 갈리면, 새 rows 에 없는 동료의 상세는 자동으로 닫힌다.
   const detail: SynergyRow | null = pickedTeammate
     ? (rows.find((r) => r.teammate === pickedTeammate) ?? null)
     : null;
 
-  // 지표/선수/대회 전환 중 잠깐 옛 표를 그대로 띄워 두는 구간(결정 9). 첫 로딩은 제외.
+  // 지표/선수 전환 중 잠깐 옛 표를 그대로 띄워 두는 구간(결정 9). 첫 로딩은 제외.
   // [변경: 2026-07-29 10:36, 김병현 수정] 같은 판정식을 여러 화면이 쓰게 돼서 isStaleView 로 옮겼다.
   // 덤으로 isPlaceholderData 도 함께 본다 — 갱신이 실패해 멈춰도 낡은 표가 또렷해지지 않는다
   // (기량 발전 화면이 리뷰 R1/R2 로 먼저 고쳤던 구멍이 여기에도 있었다).
@@ -108,8 +127,21 @@ export function SynergyPage() {
       <PageHeader
         icon={Users2}
         title="시너지"
-        sub={`${competitionLabel ?? "전체 대회"} · 같은 팀으로 함께 뛴 경기 기준`}
+        sub="전체 대회 · 같은 팀으로 함께 뛴 경기 기준"
       />
+
+      {/* [신설: 2026-09-04 10:20, 김병현 작성] 헤더에서 대회를 골라 뒀는데 이 화면만 전체를 보고
+          있으면 "왜 숫자가 다르지?" 하고 헷갈린다. 그럴 때만 이유를 한 줄로 알려 준다.
+          헤더가 이미 '전체 대회'면 안내할 게 없어서 안 띄운다. */}
+      {competitionId != null && (
+        <Alert className="border-l-[3px] border-l-primary">
+          <AlertDescription>
+            헤더는 <strong>{competitionLabel}</strong> 이지만, 시너지는{" "}
+            <strong>전체 대회</strong> 기준으로 보여줘요. 한 시즌만 보면 같이 뛴
+            경기가 몇 판 안 돼서 차이가 우연에 가까워지거든요.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* [변경: 2026-07-29 10:36, 김병현 수정] 스피너 → 동료 순위표 모양 뼈대(열 7개). */}
       {playersQuery.isLoading && <TableSkeleton rows={8} cols={7} />}
@@ -119,8 +151,11 @@ export function SynergyPage() {
           onRetry={() => playersQuery.refetch()}
         />
       )}
-      {playersQuery.data && playersQuery.data.length === 0 && (
-        <Empty>이 대회엔 선수 기록이 없어요.</Empty>
+      {/* [변경: 2026-09-04 10:40, 김병현 수정] 판정 기준을 '게스트 뺀 목록'(players)으로.
+          게스트 기록만 있으면 고를 수 있는 기준 선수가 하나도 없다.
+          [변경: 2026-09-04 10:20, 김병현 수정] 전체 대회를 보므로 "이 대회엔" → "아직". */}
+      {playersQuery.data && players.length === 0 && (
+        <Empty>아직 선수 기록이 없어요.</Empty>
       )}
 
       {basePlayer && (
@@ -150,11 +185,12 @@ export function SynergyPage() {
               onRetry={() => synergyRefetch()}
             />
           )}
-          {/* [변경: 2026-07-27 15:40, 김병현 수정] 이름 뒤에 "선수"를 끼운다.
+          {/* [변경: 2026-09-04 10:20, 김병현 수정] "이 대회엔" → "아직"(전체 대회 기준이라).
+              [변경: 2026-07-27 15:40, 김병현 수정] 이름 뒤에 "선수"를 끼운다.
               이름이 모음으로 끝나면("이준") "이준 의"가 어색해지는데, 받침을 판정하려면
               숫자로 끝나는 이름("김진우1")까지 규칙이 늘어난다. "선수" 한 글자면 항상 맞다. */}
           {data && data.games === 0 && (
-            <Empty>{basePlayer} 선수의 기록이 이 대회엔 없어요.</Empty>
+            <Empty>{basePlayer} 선수의 기록이 아직 없어요.</Empty>
           )}
           {data && data.games > 0 && rows.length === 0 && (
             <Empty>같은 팀으로 함께 뛴 동료가 없어요.</Empty>
